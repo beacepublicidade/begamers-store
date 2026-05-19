@@ -241,3 +241,8 @@ a { color: inherit; text-decoration: none; }
   background: var(--bg-accent);
   border: 0;
 }
+
+@keyframes tickerScroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}

@@ -1,46 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import ProductCard from '@/components/store/ProductCard'
 import type { Tables } from '@/lib/supabase/types'
-import Btn from '@/components/ui/Btn'
+import Link from 'next/link'
 import Icon from '@/components/ui/Icon'
-
-async function getFeaturedProducts() {
-  const supabase = createClient()
-  const { data } = await supabase
-    .from('products')
-    .select(`
-      id, name, slug, price, price_old, brand, tags, accent_color,
-      product_images(url, is_primary)
-    `)
-    .eq('is_active', true)
-    .eq('is_featured', true)
-    .limit(8)
-
-  return data ?? []
-}
-
-async function getNewProducts() {
-  const supabase = createClient()
-  const { data } = await supabase
-    .from('products')
-    .select(`
-      id, name, slug, price, price_old, brand, tags, accent_color,
-      product_images(url, is_primary)
-    `)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(8)
-
-  return data ?? []
-}
 
 type ProductWithImages = Tables<'products'> & {
   product_images: Array<{ url: string; is_primary: boolean }>
 }
 
 function toCardData(p: ProductWithImages) {
-  const primaryImg = p.product_images?.find((i) => i.is_primary)?.url
-    ?? p.product_images?.[0]?.url
+  const primaryImg = p.product_images?.find((i) => i.is_primary)?.url ?? p.product_images?.[0]?.url
   return {
     id: p.id,
     name: p.name,
@@ -48,201 +17,327 @@ function toCardData(p: ProductWithImages) {
     price: p.price,
     price_old: p.price_old,
     brand: p.brand,
-    tags: p.tags,
+    tags: p.tags as string[] | undefined,
     accent_color: p.accent_color,
     primary_image: primaryImg ?? null,
   }
 }
 
-const CATEGORIES = [
-  { label: 'Periféricos', icon: 'monitor', slug: 'perifericos' },
-  { label: 'Streetwear', icon: 'fire', slug: 'streetwear' },
-  { label: 'Hardware', icon: 'bolt', slug: 'hardware' },
-  { label: 'Console', icon: 'grid', slug: 'console' },
-  { label: 'Colecionáveis', icon: 'pkg', slug: 'colecionaveis' },
-  { label: 'Gift Cards', icon: 'star', slug: 'gift-cards' },
+async function getProducts(limit = 8) {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from('products')
+    .select('id, name, slug, price, price_old, brand, tags, accent_color, product_images(url, is_primary)')
+    .eq('is_active', true)
+    .limit(limit)
+  return (data ?? []) as unknown as ProductWithImages[]
+}
+
+function SectionHead({ eyebrow, title, link }: { eyebrow: string; title: string; link?: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28, gap: 16 }}>
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+          <span className="red-rule" style={{ width: 32, height: 4 }} />
+          <span className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>// {eyebrow}</span>
+        </div>
+        <h2 style={{ margin: 0, fontFamily: 'var(--font-display-heavy)', fontSize: 40, lineHeight: 1, letterSpacing: '-0.02em', textTransform: 'uppercase' }}>{title}</h2>
+      </div>
+      {link && (
+        <Link href="/produtos" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-display-heavy)', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', borderBottom: '2px solid var(--bg-accent)', paddingBottom: 4, color: '#fff', textDecoration: 'none' }}>
+          {link} <Icon name="chevR" size={14} />
+        </Link>
+      )}
+    </div>
+  )
+}
+
+const TICKER_ITEMS = [
+  '🔴 LIVE DROP — COLEÇÃO RANKED', '///', 'VIPER X9 EM PRÉ-VENDA', '///',
+  '10% OFF NO PIX', '///', 'FRETE GRÁTIS ACIMA DE R$ 299', '///',
+  'BLACK GAMER WEEK — ATÉ 70% OFF', '///',
 ]
 
 export default async function HomePage() {
-  const [featured, newProducts] = await Promise.all([
-    getFeaturedProducts(),
-    getNewProducts(),
-  ])
+  const products = await getProducts(8)
+  const bestSellers = products.slice(0, 4)
+  const streetwear = products.slice(4, 8)
 
   return (
     <div style={{ background: '#000', color: '#fff' }}>
-      {/* Hero */}
-      <section className="chevron-bg grain" style={{
-        minHeight: 560,
-        display: 'flex', alignItems: 'center',
-        background: 'linear-gradient(135deg, #1a0006 0%, #0a0a0a 50%, #000 100%)',
-        borderBottom: '1px solid var(--hair)',
-        position: 'relative', overflow: 'hidden',
-      }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '80px 32px', zIndex: 1, position: 'relative' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-            <span className="red-rule" />
-            <span className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>
-              // BEGAMERS DROP 2026
-            </span>
-          </div>
-          <h1 style={{
-            fontFamily: 'var(--font-display-heavy)',
-            fontSize: 'clamp(56px, 8vw, 120px)',
-            fontWeight: 900,
-            lineHeight: 0.92,
-            letterSpacing: '-0.02em',
-            textTransform: 'uppercase',
-            margin: '0 0 24px',
-            maxWidth: 800,
-          }}>
-            <span style={{ color: '#fff' }}>EQUIPE-SE</span><br />
-            <span style={{ color: 'var(--bg-accent)' }}>PARA</span><br />
-            <span style={{ color: '#fff' }}>VENCER.</span>
-          </h1>
-          <p style={{ color: 'var(--fg2)', fontSize: 18, maxWidth: 480, lineHeight: 1.6, marginBottom: 40 }}>
-            Periféricos pro-grade, streetwear gamer e colecionáveis exclusivos. Tudo que você precisa para dominar.
-          </p>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            <Btn variant="hot" size="xl" icon={<Icon name="bolt" size={18} />}>
-              Ver Ofertas
-            </Btn>
-            <Btn variant="outline" size="xl">
-              Explorar Loja
-            </Btn>
-          </div>
-        </div>
-        {/* Decorative */}
-        <div style={{
-          position: 'absolute', right: '-5%', top: '50%', transform: 'translateY(-50%)',
-          width: '45%', height: '120%',
-          background: 'radial-gradient(at 60% 50%, rgba(204,0,0,0.15), transparent 70%)',
-          pointerEvents: 'none',
-        }} />
-      </section>
 
-      {/* Trust bar */}
-      <div style={{ background: 'var(--surf-1)', borderBottom: '1px solid var(--hair)' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '16px 32px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
-          {[
-            { i: 'truck', t: 'FRETE GRÁTIS', s: 'Acima de R$ 299' },
-            { i: 'shield', t: 'SITE SEGURO', s: 'SSL + AntiFraude' },
-            { i: 'pkg', t: 'DEVOLUÇÃO', s: 'Até 30 dias' },
-            { i: 'bolt', t: 'ENVIO RÁPIDO', s: 'Postagem em 24h' },
-          ].map(f => (
-            <div key={f.t} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ color: 'var(--bg-accent-hot)' }}>
-                <Icon name={f.i} size={24} stroke={1.6} />
-              </span>
-              <div>
-                <div style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{f.t}</div>
-                <div style={{ fontSize: 11, color: 'var(--fg2)' }}>{f.s}</div>
-              </div>
-            </div>
+      {/* ── TICKER ── */}
+      <div style={{ background: 'var(--bg-accent-hot)', color: '#fff', overflow: 'hidden', borderBottom: '2px solid #000', position: 'relative', height: 44 }}>
+        <div style={{
+          display: 'flex', gap: 48, whiteSpace: 'nowrap',
+          animation: 'tickerScroll 30s linear infinite',
+          fontFamily: 'var(--font-display-heavy)', fontSize: 14,
+          letterSpacing: '0.12em', textTransform: 'uppercase',
+          alignItems: 'center', height: '100%',
+        }}>
+          {[0, 1].map(n => (
+            <span key={n} style={{ display: 'contents' }}>
+              {TICKER_ITEMS.map((item, i) => <span key={i}>{item}</span>)}
+            </span>
           ))}
         </div>
       </div>
 
-      {/* Categories */}
-      <section style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 32px 0' }}>
-        <div style={{ marginBottom: 32 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-            <span className="red-rule" style={{ width: 32 }} />
-            <span className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>// CATEGORIAS</span>
-          </div>
-          <h2 style={{ margin: 0, fontFamily: 'var(--font-display-heavy)', fontSize: 40, textTransform: 'uppercase', lineHeight: 1 }}>
-            EXPLORE A LOJA
-          </h2>
+      {/* ── HERO ── */}
+      <section style={{ position: 'relative', minHeight: 720, overflow: 'hidden', background: '#000' }}>
+        {/* giant bg number */}
+        <div style={{
+          position: 'absolute', left: -40, top: 80, zIndex: 1,
+          fontFamily: 'var(--font-display-heavy)', fontSize: 720,
+          color: '#0e0e0e', lineHeight: 0.78, letterSpacing: '-0.08em',
+          userSelect: 'none', pointerEvents: 'none',
+        }}>26K</div>
+
+        {/* diagonal red slash */}
+        <div style={{
+          position: 'absolute', top: 0, right: '12%', bottom: 0, width: 80,
+          background: 'var(--bg-accent)',
+          clipPath: 'polygon(60% 0, 100% 0, 40% 100%, 0 100%)',
+          opacity: 0.95,
+        }} />
+
+        {/* product photo area */}
+        <div style={{
+          position: 'absolute', right: 0, top: 0, bottom: 0, width: '52%',
+          background: 'radial-gradient(circle at 40% 60%, rgba(255,31,61,0.4), transparent 60%), linear-gradient(135deg, #0a0a0a 0%, #1a0006 50%, #000 100%)',
+          clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0 100%)',
+        }}>
+          <div className="grain" style={{ position: 'absolute', inset: 0 }} />
+          <div style={{
+            position: 'absolute', left: '30%', top: '20%', width: '55%', height: '60%',
+            background: 'linear-gradient(180deg, #cc0000 0%, #1a0006 100%)',
+            clipPath: 'polygon(20% 5%, 80% 0, 95% 30%, 90% 75%, 75% 100%, 25% 100%, 10% 75%, 5% 30%)',
+            boxShadow: '0 0 80px rgba(255,31,61,0.4)',
+          }} />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 16 }}>
-          {CATEGORIES.map(cat => (
-            <a key={cat.slug} href={`/produtos?categoria=${cat.slug}`} style={{
-              background: 'var(--surf-2)', border: '1px solid var(--hair)',
-              padding: '28px 16px', textAlign: 'center',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
-              transition: 'all 200ms var(--ease-out)',
+
+        {/* content */}
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 1280, margin: '0 auto', padding: '80px 32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
+            <span style={{
+              padding: '6px 12px', background: 'var(--bg-accent-hot)', color: '#fff',
+              fontFamily: 'var(--font-display-heavy)', fontSize: 11, letterSpacing: '0.16em',
+              textTransform: 'uppercase', clipPath: 'polygon(8% 0, 100% 0, 92% 100%, 0 100%)',
+            }}>● LIVE — PRÉ-VENDA</span>
+            <span className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>// EP.01 / DROP 2026</span>
+          </div>
+
+          <h1 style={{
+            margin: 0, fontFamily: 'var(--font-display-heavy)',
+            fontSize: 168, lineHeight: 0.82, letterSpacing: '-0.05em',
+            textTransform: 'uppercase', maxWidth: 1000,
+          }}>
+            ENTRA<br />
+            NO{' '}
+            <span style={{
+              background: 'var(--bg-accent)', color: '#fff', padding: '0 16px',
+              clipPath: 'polygon(4% 0, 100% 0, 96% 100%, 0 100%)',
+            }}>SERVER.</span>
+          </h1>
+
+          <div style={{ display: 'flex', gap: 80, marginTop: 48, maxWidth: 720 }}>
+            <div>
+              <div className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>// PRODUTO EM DESTAQUE</div>
+              <div style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 28, marginTop: 6, textTransform: 'uppercase' }}>VIPER X9</div>
+              <div style={{ fontSize: 13, color: 'var(--fg2)', marginTop: 4 }}>Mouse sem fio · 26K DPI · 90h</div>
+            </div>
+            <div>
+              <div className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>// PREÇO</div>
+              <div style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 32, marginTop: 6, color: 'var(--bg-accent-hot)' }}>R$ 449,90</div>
+              <div style={{ fontSize: 13, color: 'var(--fg2)', marginTop: 4, textDecoration: 'line-through' }}>de R$ 599,90</div>
+            </div>
+            <div>
+              <div className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>// ESTOQUE</div>
+              <div style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 28, marginTop: 6 }}>378 un.</div>
+              <div style={{ fontSize: 13, color: 'var(--fg2)', marginTop: 4 }}>Limitado a 1 por CPF</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12, marginTop: 40 }}>
+            <Link href="/produtos" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 10,
+              background: 'var(--bg-accent-hot)', color: '#fff', padding: '16px 32px',
+              fontFamily: 'var(--font-display-heavy)', fontSize: 14, letterSpacing: '0.08em',
+              textTransform: 'uppercase', textDecoration: 'none',
+              clipPath: 'polygon(0 0, 100% 0, 96% 100%, 4% 100%)',
+            }}>
+              <Icon name="bolt" size={20} /> RESERVA O TEU
+            </Link>
+            <Link href="/produtos" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: 'transparent', color: '#fff', padding: '16px 32px',
+              fontFamily: 'var(--font-display-heavy)', fontSize: 14, letterSpacing: '0.08em',
+              textTransform: 'uppercase', textDecoration: 'none',
+              border: '1px solid var(--hair-strong)',
+            }}>
+              Ver specs completas →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── COLEÇÃO + DESTAQUE asymmetric ── */}
+      <section style={{ padding: '80px 32px', maxWidth: 1280, margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 16, height: 560 }}>
+          {/* Big banner */}
+          <Link href="/produtos?categoria=streetwear" style={{
+            position: 'relative', overflow: 'hidden',
+            background: 'linear-gradient(135deg, #1a0006 0%, #000 60%)',
+            display: 'flex', alignItems: 'flex-end', padding: 48,
+            textDecoration: 'none', color: '#fff',
+          }}>
+            <div style={{
+              position: 'absolute', top: 0, right: 0, width: '60%', height: '100%',
+              background: 'linear-gradient(135deg, #cc0000, #4a0006)',
+              clipPath: 'polygon(30% 0, 100% 0, 100% 100%, 0 100%)', opacity: 0.9,
+            }} />
+            <div className="chevron-bg" style={{ position: 'absolute', inset: 0, opacity: 0.4 }} />
+            <div style={{ position: 'relative', zIndex: 2 }}>
+              <span className="eyebrow-mono">// EDIÇÃO LIMITADA · OUT/2026</span>
+              <h2 style={{ margin: '12px 0', fontFamily: 'var(--font-display-heavy)', fontSize: 96, lineHeight: 0.85, textTransform: 'uppercase', letterSpacing: '-0.04em' }}>
+                RANKED<br />DROP III
+              </h2>
+              <p style={{ margin: '0 0 24px', color: 'rgba(255,255,255,0.85)', fontSize: 15, maxWidth: 460 }}>
+                Hoodies, camisetas e bonés. Drop de 500 unidades. Quando acabou, acabou.
+              </p>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                background: '#1a1a1a', color: '#fff', padding: '12px 24px',
+                fontFamily: 'var(--font-display-heavy)', fontSize: 12, letterSpacing: '0.06em',
+                textTransform: 'uppercase', border: '1px solid var(--hair-strong)',
+              }}>VESTE O TIME →</span>
+            </div>
+          </Link>
+
+          {/* Stacked right */}
+          <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: 16 }}>
+            <Link href="/produtos?categoria=hardware" style={{
+              position: 'relative', overflow: 'hidden', padding: 32,
+              background: 'linear-gradient(135deg, #1a1a3a 0%, #050530 100%)',
+              border: '1px solid var(--hair-strong)',
+              display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
               textDecoration: 'none', color: '#fff',
             }}>
-              <Icon name={cat.icon} size={32} color="var(--bg-accent-hot)" stroke={1.5} />
-              <span style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-                {cat.label}
-              </span>
-            </a>
+              <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 6, background: 'var(--bg-accent-hot)' }} />
+              <span className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>// SETUP COMPLETO</span>
+              <div>
+                <h3 style={{ margin: '0 0 8px', fontFamily: 'var(--font-display-heavy)', fontSize: 36, lineHeight: 0.9, textTransform: 'uppercase' }}>HARDWARE<br />SEM JUROS</h3>
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--fg2)' }}>até 18x · placa, monitor, gabinete</p>
+              </div>
+            </Link>
+            <Link href="/produtos?categoria=colecionaveis" style={{
+              position: 'relative', overflow: 'hidden', padding: 32,
+              background: 'linear-gradient(135deg, #2a1a4a 0%, #000 100%)',
+              border: '1px solid var(--hair-strong)',
+              display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+              textDecoration: 'none', color: '#fff',
+            }}>
+              <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 6, background: 'var(--bg-accent)' }} />
+              <span className="eyebrow-mono" style={{ color: '#a3a3a3' }}>// PRÉ-VENDA</span>
+              <div>
+                <h3 style={{ margin: '0 0 8px', fontFamily: 'var(--font-display-heavy)', fontSize: 36, lineHeight: 0.9, textTransform: 'uppercase' }}>CYBER<br />SAMURAI 1/6</h3>
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--fg2)' }}>Action figure colecionável · R$ 899</p>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── TROPHY ROW ── */}
+      <section style={{
+        background: 'linear-gradient(180deg, #050505, #000)',
+        borderTop: '1px solid var(--hair)', borderBottom: '1px solid var(--hair)',
+        padding: '64px 32px',
+      }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32 }}>
+          {[
+            { n: '2.8K+', l: 'PRODUTOS NA LOJA' },
+            { n: '47K',   l: 'GAMERS NA COMUNIDADE' },
+            { n: '4.9★', l: 'AVALIAÇÃO MÉDIA' },
+            { n: '24H',  l: 'POSTAGEM ÚTIL' },
+          ].map(s => (
+            <div key={s.l}>
+              <span className="red-rule" />
+              <div style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 80, lineHeight: 0.9, marginTop: 14, letterSpacing: '-0.03em' }}>{s.n}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg2)', letterSpacing: '0.16em', marginTop: 8 }}>// {s.l}</div>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* Featured Products */}
-      {featured.length > 0 && (
-        <section style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 32px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32 }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                <span className="red-rule" style={{ width: 32 }} />
-                <span className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>// EM DESTAQUE</span>
-              </div>
-              <h2 style={{ margin: 0, fontFamily: 'var(--font-display-heavy)', fontSize: 40, textTransform: 'uppercase', lineHeight: 1 }}>
-                MAIS VENDIDOS
-              </h2>
-            </div>
-            <a href="/produtos" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              fontFamily: 'var(--font-display-heavy)', fontSize: 12,
-              letterSpacing: '0.1em', textTransform: 'uppercase',
-              borderBottom: '2px solid var(--bg-accent)', paddingBottom: 4,
-              color: '#fff', textDecoration: 'none',
-            }}>
-              Ver todos <Icon name="chevR" size={14} />
-            </a>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
-            {(featured as unknown as ProductWithImages[]).map(p => (
-              <ProductCard key={p.id} product={toCardData(p)} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* New Products */}
-      {newProducts.length > 0 && (
-        <section style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px 80px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32 }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                <span className="red-rule" style={{ width: 32 }} />
-                <span className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>// CHEGOU AGORA</span>
-              </div>
-              <h2 style={{ margin: 0, fontFamily: 'var(--font-display-heavy)', fontSize: 40, textTransform: 'uppercase', lineHeight: 1 }}>
-                LANÇAMENTOS
-              </h2>
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
-            {(newProducts as unknown as ProductWithImages[]).slice(0, 4).map(p => (
-              <ProductCard key={p.id} product={toCardData(p)} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Newsletter */}
-      <section style={{ background: 'linear-gradient(135deg, #1a0006, #000)', borderTop: '1px solid var(--hair)' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 32px', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 48, alignItems: 'center' }}>
-          <div>
-            <span className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)', display: 'block', marginBottom: 8 }}>// NEWSLETTER</span>
-            <h2 style={{ margin: '0 0 8px', fontFamily: 'var(--font-display-heavy)', fontSize: 40, textTransform: 'uppercase', lineHeight: 1 }}>
-              ENTRA NO SERVER.
-            </h2>
-            <p style={{ color: 'var(--fg2)', margin: 0, fontSize: 14, maxWidth: 460 }}>
-              Drops antes de todo mundo, cupons exclusivos e os melhores deals. Sem spam.
-            </p>
-          </div>
-          <form action="/api/newsletter" method="POST" style={{ display: 'flex', gap: 8 }}>
-            <input className="bg-input" name="email" type="email" placeholder="seu@email.com" style={{ flex: 1 }} required />
-            <Btn variant="hot" size="lg" type="submit">Cadastrar</Btn>
-          </form>
+      {/* ── BEST SELLERS ── */}
+      <section style={{ padding: '80px 32px', maxWidth: 1280, margin: '0 auto' }}>
+        <SectionHead eyebrow="DROP DA SEMANA" title="OS MAIS COBIÇADOS." link="Ver todos" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+          {bestSellers.length > 0
+            ? bestSellers.map(p => <ProductCard key={p.id} product={toCardData(p)} />)
+            : [1, 2, 3, 4].map(i => (
+                <div key={i} className="placeholder-grad" style={{ height: 360, border: '1px solid var(--hair)' }} />
+              ))
+          }
         </div>
       </section>
+
+      {/* ── CATEGORIES ── */}
+      <section style={{ padding: '0 32px 80px', maxWidth: 1280, margin: '0 auto' }}>
+        <SectionHead eyebrow="EXPLORE" title="POR CATEGORIA." />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          {[
+            { t: 'PERIFÉRICOS',   n: '248', c: '#cc0000', slug: 'perifericos' },
+            { t: 'STREETWEAR',    n: '84',  c: '#1a1a1a', slug: 'streetwear' },
+            { t: 'HARDWARE',      n: '412', c: '#1a4a8a', slug: 'hardware' },
+            { t: 'CONSOLE',       n: '156', c: '#7a1a8a', slug: 'console' },
+            { t: 'COLECIONÁVEIS', n: '73',  c: '#cc4400', slug: 'colecionaveis' },
+            { t: 'GIFT CARDS',    n: '28',  c: '#0e4a1f', slug: 'gift-cards' },
+          ].map(c => (
+            <Link key={c.t} href={`/produtos?categoria=${c.slug}`} style={{
+              position: 'relative', overflow: 'hidden',
+              background: `linear-gradient(135deg, ${c.c}aa 0%, #050505 100%)`,
+              minHeight: 200, padding: 32,
+              display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+              border: '1px solid var(--hair)', textDecoration: 'none', color: '#fff',
+            }}>
+              <div style={{
+                position: 'absolute', top: 0, right: 0, padding: '12px 16px',
+                background: 'rgba(0,0,0,0.4)', fontFamily: 'var(--font-mono)',
+                fontSize: 10, letterSpacing: '0.1em',
+              }}>{c.n} ITENS</div>
+              <span className="eyebrow-mono">// CATEGORIA</span>
+              <h3 style={{ margin: 0, fontFamily: 'var(--font-display-heavy)', fontSize: 36, lineHeight: 0.9, textTransform: 'uppercase', letterSpacing: '-0.02em' }}>{c.t}</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', letterSpacing: '0.1em' }}>EXPLORAR</span>
+                <Icon name="chevR" size={20} />
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ── STREETWEAR STRIP ── */}
+      <section style={{
+        background: '#0a0a0a', padding: '80px 32px',
+        borderTop: '1px solid var(--hair)', borderBottom: '1px solid var(--hair)',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div className="chevron-bg" style={{ position: 'absolute', inset: 0, opacity: 0.5 }} />
+        <div style={{ maxWidth: 1280, margin: '0 auto', position: 'relative' }}>
+          <SectionHead eyebrow="WEAR — DROP III" title="VESTE O TIME." link="Coleção completa" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+            {streetwear.length > 0
+              ? streetwear.map(p => <ProductCard key={p.id} product={toCardData(p)} />)
+              : [1, 2, 3, 4].map(i => (
+                  <div key={i} className="placeholder-grad" style={{ height: 360, border: '1px solid var(--hair)' }} />
+                ))
+            }
+          </div>
+        </div>
+      </section>
+
     </div>
   )
 }
