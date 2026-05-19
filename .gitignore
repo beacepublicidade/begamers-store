@@ -1,0 +1,21 @@
+# Editor & system
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Vercel
+.vercel
+
+# Logs
+*.log
+npm-debug.log*
+
+# Deps (you don't need them — projeto roda via CDN)
+node_modules/
+
+# Local state files
+.design-canvas.state.json
+
+# Arquivos locais
+Geral/

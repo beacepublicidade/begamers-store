@@ -1,0 +1,12 @@
+{
+  "name": "begamers-store",
+  "version": "1.0.0",
+  "description": "BeGamers Store — tema e-commerce gamer (preto + vermelho + neon)",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve . -l 3000",
+    "start": "npx serve . -l 3000"
+  },
+  "keywords": ["ecommerce", "gamer", "begamers", "design-system"],
+  "license": "UNLICENSED"
+}
