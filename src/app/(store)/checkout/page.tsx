@@ -84,7 +84,14 @@ export default function CheckoutPage() {
       }),
     })
     setLoading(false)
-    if (res.ok) setStep('confirmacao')
+    if (res.ok) {
+      const data = await res.json()
+      if (data.payment_url) {
+        window.location.href = data.payment_url
+      } else {
+        setStep('confirmacao')
+      }
+    }
   }
 
   if (items.length === 0 && step !== 'confirmacao') {

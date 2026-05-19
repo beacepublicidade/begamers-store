@@ -80,5 +80,44 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, order_number: order.order_number, order_id: order.id }, { status: 201 })
+  // Create InfinitePay payment link
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://begamerstore.com.br'
+  const handle = process.env.INFINITEPAY_HANDLE ?? 'red-circle-digital'
+
+  const ipPayload = {
+    handle,
+    redirect_url: `${baseUrl}/checkout/sucesso`,
+    webhook_url: `${baseUrl}/api/pagamento/webhook`,
+    order_nsu: order.id,
+    items: items.map((item: any) => ({
+      quantity: item.quantity,
+      price: item.price,
+      description: item.product_name,
+    })),
+    customer: {
+      name: customer.name,
+      email: customer.email,
+      phone_number: customer.phone ?? '',
+    },
+    address: {
+      cep: address.zip ?? '',
+      number: address.number ?? '',
+      complement: address.complement ?? '',
+    },
+  }
+
+  const ipRes = await fetch('https://api.checkout.infinitepay.io/links', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(ipPayload),
+  })
+
+  if (!ipRes.ok) {
+    const ipErr = await ipRes.text()
+    return NextResponse.json({ error: `InfinitePay error: ${ipErr}` }, { status: 502 })
+  }
+
+  const { url: paymentUrl } = await ipRes.json() as { url: string }
+
+  return NextResponse.json({ ok: true, order_number: order.order_number, order_id: order.id, payment_url: paymentUrl }, { status: 201 })
 }
