@@ -7,17 +7,23 @@ Thumbs.db
 # Vercel
 .vercel
 
+# Next.js build output
+.next/
+out/
+
 # Logs
 *.log
 npm-debug.log*
 
-# Deps (you don't need them — projeto roda via CDN)
+# Deps
 node_modules/
+
+# Env files
+.env.local
+.env.*.local
 
 # Local state files
 .design-canvas.state.json
 
 # Arquivos locais
 Geral/
-
-.vercel
