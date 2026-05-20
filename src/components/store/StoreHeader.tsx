@@ -76,17 +76,17 @@ export default function StoreHeader({ activeCategory }: { activeCategory?: strin
         </Link>
 
         {/* Search */}
-        <div style={{ position: 'relative', maxWidth: 640, margin: '0 auto', width: '100%' }}>
-          <Icon name="search" size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg3)' }} />
-          <input className="bg-input" placeholder="Buscar produtos, marcas, jogos..." style={{ paddingLeft: 44, paddingRight: 100 }} />
-          <button style={{
+        <form method="GET" action="/busca" style={{ position: 'relative', maxWidth: 640, margin: '0 auto', width: '100%' }}>
+          <Icon name="search" size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg3)', pointerEvents: 'none' }} />
+          <input name="q" className="bg-input" placeholder="Buscar produtos, marcas, jogos..." style={{ paddingLeft: 44, paddingRight: 100 }} />
+          <button type="submit" style={{
             position: 'absolute', right: 4, top: 4, bottom: 4,
             background: 'var(--bg-accent)', color: '#fff', border: 0, padding: '0 20px',
             fontFamily: 'var(--font-display-heavy)', fontWeight: 900, fontSize: 12, letterSpacing: '0.06em',
             textTransform: 'uppercase', cursor: 'pointer',
             clipPath: 'polygon(0 0, 100% 0, 100% 100%, 8% 100%)',
           }}>Buscar</button>
-        </div>
+        </form>
 
         {/* Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
