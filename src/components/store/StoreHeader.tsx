@@ -2,6 +2,8 @@
 import Link from 'next/link'
 import Icon from '@/components/ui/Icon'
 import { useCart } from '@/lib/hooks/useCart'
+import { createClient } from '@/lib/supabase/client'
+import { useEffect, useState } from 'react'
 
 const CATEGORIES = ['PERIFÉRICOS', 'STREETWEAR', 'HARDWARE', 'CONSOLE', 'COLECIONÁVEIS', 'GIFT CARDS', 'OFERTAS']
 
@@ -24,6 +26,26 @@ function fmt(v: number) {
 
 export default function StoreHeader({ activeCategory }: { activeCategory?: string }) {
   const { totalItems, totalPrice, openCart } = useCart()
+  const [userName, setUserName] = useState<string | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        const name = user.user_metadata?.name ?? user.email?.split('@')[0] ?? ''
+        setUserName(name.split(' ')[0].toUpperCase())
+      }
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const name = session.user.user_metadata?.name ?? session.user.email?.split('@')[0] ?? ''
+        setUserName(name.split(' ')[0].toUpperCase())
+      } else {
+        setUserName(null)
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   return (
     <header style={{ background: '#000', borderBottom: '1px solid var(--hair)' }}>
@@ -74,10 +96,22 @@ export default function StoreHeader({ activeCategory }: { activeCategory?: strin
 
         {/* Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <Link href="/conta" style={iconBtnStyle}>
-            <Icon name="user" size={20} />
-            <span style={{ fontSize: 11, fontWeight: 600 }}>Entrar</span>
-          </Link>
+          {userName ? (
+            <Link href="/conta/minha-conta" style={iconBtnStyle}>
+              <span style={{
+                width: 28, height: 28, background: 'var(--bg-accent)',
+                clipPath: 'polygon(50% 0, 100% 30%, 90% 80%, 50% 100%, 10% 80%, 0 30%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'var(--font-display-heavy)', fontSize: 10, flexShrink: 0,
+              }}>{userName.slice(0, 2)}</span>
+              <span style={{ fontSize: 11, fontWeight: 600 }}>{userName}</span>
+            </Link>
+          ) : (
+            <Link href="/conta/login" style={iconBtnStyle}>
+              <Icon name="user" size={20} />
+              <span style={{ fontSize: 11, fontWeight: 600 }}>Entrar</span>
+            </Link>
+          )}
           <button style={iconBtnStyle}>
             <Icon name="heart" size={20} />
             <span style={{ fontSize: 11, fontWeight: 600 }}>Lista</span>
