@@ -3,5 +3,6 @@
   "framework": "nextjs",
   "buildCommand": "next build",
   "outputDirectory": ".next",
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "alias": ["begamerstore.com.br", "www.begamerstore.com.br"]
 }
