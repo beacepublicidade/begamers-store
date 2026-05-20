@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Icon from '@/components/ui/Icon'
+import AdminTopbar from '@/components/admin/AdminTopbar'
 
 interface Customer {
   id: string
@@ -27,11 +28,13 @@ export default function ClientesPage() {
 
   const inputStyle: React.CSSProperties = {
     background: 'var(--surf-1)', border: '1px solid var(--hair-strong)',
-    color: '#fff', padding: '10px 14px', fontSize: 13, borderRadius: 2,
+    color: '#fff', padding: '10px 14px', fontSize: 13, borderRadius: 0,
   }
 
   return (
-    <div style={{ padding: 32 }}>
+    <div>
+      <AdminTopbar section="VENDAS" page="CLIENTES" />
+      <div style={{ padding: 32 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>
           <h1 style={{ margin: 0, fontFamily: 'var(--font-display-heavy)', fontSize: 28, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
@@ -59,12 +62,12 @@ export default function ClientesPage() {
           background: 'var(--surf-3)', border: '1px solid var(--hair-strong)',
           color: '#fff', padding: '10px 20px', fontSize: 12,
           fontFamily: 'var(--font-display-heavy)', letterSpacing: '0.06em',
-          textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2,
+          textTransform: 'uppercase', cursor: 'pointer', borderRadius: 0,
         }}>Buscar</button>
       </div>
 
       {/* Table */}
-      <div style={{ background: 'var(--surf-2)', border: '1px solid var(--hair)', borderRadius: 2 }}>
+      <div style={{ background: 'var(--surf-2)', border: '1px solid var(--hair)', borderRadius: 0 }}>
         {loading ? (
           <p style={{ padding: 24, color: 'var(--fg3)', fontSize: 13 }}>Carregando...</p>
         ) : customers.length === 0 ? (
@@ -94,6 +97,7 @@ export default function ClientesPage() {
             </tbody>
           </table>
         )}
+      </div>
       </div>
     </div>
   )

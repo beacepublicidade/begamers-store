@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Btn from '@/components/ui/Btn'
+import AdminTopbar from '@/components/admin/AdminTopbar'
 
 interface Setting { key: string; value: string; label: string; type: 'text' | 'number' | 'textarea' | 'url' }
 
@@ -50,7 +51,7 @@ export default function ConfiguracoesPage() {
 
   const inputStyle: React.CSSProperties = {
     background: 'var(--surf-1)', border: '1px solid var(--hair-strong)',
-    color: '#fff', padding: '10px 14px', fontSize: 13, borderRadius: 2, width: '100%',
+    color: '#fff', padding: '10px 14px', fontSize: 13, borderRadius: 0, width: '100%',
   }
 
   if (loading) return <div style={{ padding: 32, color: 'var(--fg3)' }}>Carregando...</div>
@@ -62,7 +63,9 @@ export default function ConfiguracoesPage() {
   ]
 
   return (
-    <div style={{ padding: 32, maxWidth: 800 }}>
+    <div>
+      <AdminTopbar section="CONFIG" page="LOJA" />
+      <div style={{ padding: 32, maxWidth: 800 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
         <h1 style={{ margin: 0, fontFamily: 'var(--font-display-heavy)', fontSize: 28, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
           Configurações
@@ -73,7 +76,7 @@ export default function ConfiguracoesPage() {
       </div>
 
       {groups.map(group => (
-        <div key={group.title} style={{ background: 'var(--surf-2)', border: '1px solid var(--hair)', borderRadius: 2, padding: 24, marginBottom: 20 }}>
+        <div key={group.title} style={{ background: 'var(--surf-2)', border: '1px solid var(--hair)', borderRadius: 0, padding: 24, marginBottom: 20 }}>
           <h3 style={{ margin: '0 0 20px', fontFamily: 'var(--font-display-heavy)', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--fg3)' }}>
             {group.title}
           </h3>
@@ -106,6 +109,7 @@ export default function ConfiguracoesPage() {
           </div>
         </div>
       ))}
+      </div>
     </div>
   )
 }

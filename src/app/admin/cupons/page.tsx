@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Icon from '@/components/ui/Icon'
 import Btn from '@/components/ui/Btn'
+import AdminTopbar from '@/components/admin/AdminTopbar'
 
 interface Coupon {
   id: string
@@ -84,17 +85,19 @@ export default function CuponsPage() {
 
   const inputStyle: React.CSSProperties = {
     background: 'var(--surf-1)', border: '1px solid var(--hair-strong)',
-    color: '#fff', padding: '10px 14px', fontSize: 13, borderRadius: 2, width: '100%',
+    color: '#fff', padding: '10px 14px', fontSize: 13, borderRadius: 0, width: '100%',
   }
 
   return (
-    <div style={{ padding: 32 }}>
+    <div>
+      <AdminTopbar section="VENDAS" page="CUPONS" />
+      <div style={{ padding: 32 }}>
       <h1 style={{ margin: '0 0 32px', fontFamily: 'var(--font-display-heavy)', fontSize: 28, textTransform: 'uppercase' }}>
         Cupons
       </h1>
 
       {/* Form */}
-      <div style={{ background: 'var(--surf-2)', border: '1px solid var(--hair)', borderRadius: 2, padding: 24, marginBottom: 24 }}>
+      <div style={{ background: 'var(--surf-2)', border: '1px solid var(--hair)', borderRadius: 0, padding: 24, marginBottom: 24 }}>
         <h3 style={{ margin: '0 0 16px', fontFamily: 'var(--font-display-heavy)', fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
           {editing ? 'Editar Cupom' : 'Novo Cupom'}
         </h3>
@@ -138,7 +141,7 @@ export default function CuponsPage() {
       </div>
 
       {/* Table */}
-      <div style={{ background: 'var(--surf-2)', border: '1px solid var(--hair)', borderRadius: 2 }}>
+      <div style={{ background: 'var(--surf-2)', border: '1px solid var(--hair)', borderRadius: 0 }}>
         {loading ? (
           <p style={{ padding: 24, color: 'var(--fg3)', fontSize: 13 }}>Carregando...</p>
         ) : coupons.length === 0 ? (
@@ -177,17 +180,17 @@ export default function CuponsPage() {
                       color: c.is_active ? '#4cd680' : '#6b6b6b',
                       background: c.is_active ? '#0e3a1f' : '#1a1a1a',
                       border: `1px solid ${c.is_active ? '#1f9d55' : 'var(--hair-strong)'}`,
-                      borderRadius: 2,
+                      borderRadius: 0,
                     }}>
                       {c.is_active ? 'Ativo' : 'Inativo'}
                     </button>
                   </td>
                   <td style={{ padding: '12px 16px' }}>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <button onClick={() => startEdit(c)} style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surf-3)', border: '1px solid var(--hair-strong)', borderRadius: 2, color: '#fff', cursor: 'pointer' }}>
+                      <button onClick={() => startEdit(c)} style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surf-3)', border: '1px solid var(--hair-strong)', borderRadius: 0, color: '#fff', cursor: 'pointer' }}>
                         <Icon name="edit" size={14} />
                       </button>
-                      <button onClick={() => del(c.id)} style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a0808', border: '1px solid #3a1a1a', borderRadius: 2, color: '#f87171', cursor: 'pointer' }}>
+                      <button onClick={() => del(c.id)} style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a0808', border: '1px solid #3a1a1a', borderRadius: 0, color: '#f87171', cursor: 'pointer' }}>
                         <Icon name="trash" size={14} />
                       </button>
                     </div>
@@ -197,6 +200,7 @@ export default function CuponsPage() {
             </tbody>
           </table>
         )}
+      </div>
       </div>
     </div>
   )

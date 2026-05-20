@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import Icon from '@/components/ui/Icon'
 import ProductsTable from '@/components/admin/ProductsTable'
+import AdminTopbar from '@/components/admin/AdminTopbar'
 
 async function getProducts(search?: string, category?: string) {
   const supabase = createClient()
@@ -55,7 +56,9 @@ export default async function AdminProdutosPage({ searchParams }: PageProps) {
   ])
 
   return (
-    <div style={{ padding: 32 }}>
+    <div>
+      <AdminTopbar section="CATÁLOGO" page="PRODUTOS" />
+      <div style={{ padding: 32 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>
@@ -96,7 +99,7 @@ export default async function AdminProdutosPage({ searchParams }: PageProps) {
           defaultValue={searchParams.cat}
           style={{
             background: 'var(--surf-1)', border: '1px solid var(--hair-strong)',
-            color: '#fff', padding: '10px 16px', fontSize: 13, borderRadius: 2,
+            color: '#fff', padding: '10px 16px', fontSize: 13, borderRadius: 0,
             minWidth: 160,
           }}
         >
@@ -109,13 +112,14 @@ export default async function AdminProdutosPage({ searchParams }: PageProps) {
           background: 'var(--surf-3)', border: '1px solid var(--hair-strong)',
           color: '#fff', padding: '10px 20px', fontSize: 12,
           fontFamily: 'var(--font-display-heavy)', letterSpacing: '0.06em',
-          textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2,
+          textTransform: 'uppercase', cursor: 'pointer', borderRadius: 0,
         }}>
           Filtrar
         </button>
       </form>
 
       <ProductsTable products={products} />
+      </div>
     </div>
   )
 }

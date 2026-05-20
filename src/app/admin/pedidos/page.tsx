@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Icon from '@/components/ui/Icon'
 import Link from 'next/link'
+import AdminTopbar from '@/components/admin/AdminTopbar'
 
 interface Order {
   id: string
@@ -74,11 +75,13 @@ export default function PedidosPage() {
 
   const inputStyle: React.CSSProperties = {
     background: 'var(--surf-1)', border: '1px solid var(--hair-strong)',
-    color: '#fff', padding: '10px 14px', fontSize: 13, borderRadius: 2,
+    color: '#fff', padding: '10px 14px', fontSize: 13, borderRadius: 0,
   }
 
   return (
-    <div style={{ padding: 32 }}>
+    <div>
+      <AdminTopbar section="VENDAS" page="PEDIDOS" />
+      <div style={{ padding: 32 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>
           <h1 style={{ margin: 0, fontFamily: 'var(--font-display-heavy)', fontSize: 28, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
@@ -116,12 +119,12 @@ export default function PedidosPage() {
           background: 'var(--surf-3)', border: '1px solid var(--hair-strong)',
           color: '#fff', padding: '10px 20px', fontSize: 12,
           fontFamily: 'var(--font-display-heavy)', letterSpacing: '0.06em',
-          textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2,
+          textTransform: 'uppercase', cursor: 'pointer', borderRadius: 0,
         }}>Filtrar</button>
       </div>
 
       {/* Table */}
-      <div style={{ background: 'var(--surf-2)', border: '1px solid var(--hair)', borderRadius: 2 }}>
+      <div style={{ background: 'var(--surf-2)', border: '1px solid var(--hair)', borderRadius: 0 }}>
         {loading ? (
           <p style={{ padding: 24, color: 'var(--fg3)', fontSize: 13 }}>Carregando...</p>
         ) : orders.length === 0 ? (
@@ -160,7 +163,7 @@ export default function PedidosPage() {
                         style={{
                           padding: '4px 8px', fontSize: 11, cursor: 'pointer',
                           fontFamily: 'var(--font-display-heavy)', letterSpacing: '0.08em', textTransform: 'uppercase',
-                          color: sc.color, background: sc.bg, border: `1px solid ${sc.border}`, borderRadius: 2,
+                          color: sc.color, background: sc.bg, border: `1px solid ${sc.border}`, borderRadius: 0,
                         }}
                       >
                         {Object.entries(STATUS_LABELS).map(([v, l]) => (
@@ -172,7 +175,7 @@ export default function PedidosPage() {
                     <td style={{ padding: '12px 16px' }}>
                       <Link href={`/admin/pedidos/${o.id}`} style={{
                         width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        background: 'var(--surf-3)', border: '1px solid var(--hair-strong)', borderRadius: 2, color: '#fff',
+                        background: 'var(--surf-3)', border: '1px solid var(--hair-strong)', borderRadius: 0, color: '#fff',
                       }}>
                         <Icon name="eye" size={14} />
                       </Link>
@@ -183,6 +186,7 @@ export default function PedidosPage() {
             </tbody>
           </table>
         )}
+      </div>
       </div>
     </div>
   )
