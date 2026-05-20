@@ -3,6 +3,7 @@ import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import Image from 'next/image'
 import Icon from '@/components/ui/Icon'
 
 const LABEL: React.CSSProperties = {
@@ -88,8 +89,8 @@ function ContaLoginInner() {
         <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 72, background: 'var(--bg-accent)', clipPath: 'polygon(40% 0, 100% 0, 100% 100%, 0 100%)' }} />
 
         <div style={{ position: 'relative', zIndex: 2 }}>
-          <Link href="/" style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 18, letterSpacing: '0.04em', textTransform: 'uppercase', textDecoration: 'none', color: '#fff' }}>
-            <span style={{ color: 'var(--bg-accent)' }}>BE</span>GAMERS STORE
+          <Link href="/">
+            <Image src="/images/logo.png" alt="BeGamers Store" width={140} height={36} style={{ objectFit: 'contain' }} />
           </Link>
         </div>
 

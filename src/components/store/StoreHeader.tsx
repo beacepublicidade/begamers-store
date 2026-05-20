@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import Image from 'next/image'
 import Icon from '@/components/ui/Icon'
 import { useCart } from '@/lib/hooks/useCart'
 import { createClient } from '@/lib/supabase/client'
@@ -71,14 +72,7 @@ export default function StoreHeader({ activeCategory }: { activeCategory?: strin
         display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 32, alignItems: 'center',
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center' }}>
-          <span style={{
-            fontFamily: 'var(--font-display-heavy)',
-            fontSize: 22, fontWeight: 900,
-            letterSpacing: '0.04em', textTransform: 'uppercase',
-          }}>
-            <span style={{ color: 'var(--bg-accent)' }}>BE</span>
-            <span>GAMERS STORE</span>
-          </span>
+          <Image src="/images/logo.png" alt="BeGamers Store" width={160} height={40} style={{ objectFit: 'contain' }} priority />
         </Link>
 
         {/* Search */}
