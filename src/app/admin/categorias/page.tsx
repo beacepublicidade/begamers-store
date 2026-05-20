@@ -26,7 +26,7 @@ export default function CategoriasPage() {
   async function load() {
     const res = await fetch('/api/admin/categorias')
     const data = await res.json()
-    setCategories(data)
+    setCategories(Array.isArray(data) ? data : [])
     setLoading(false)
   }
 

@@ -34,11 +34,15 @@ async function getProducts(limit = 8) {
 }
 
 async function getBannerSettings() {
-  const supabase = createClient()
-  const { data } = await supabase.from('settings').select('key, value')
-  const map: Record<string, string> = {}
-  ;(data ?? []).forEach((s: any) => { map[s.key] = s.value })
-  return map
+  try {
+    const supabase = createClient()
+    const { data } = await supabase.from('settings').select('key, value')
+    const map: Record<string, string> = {}
+    ;(Array.isArray(data) ? data : []).forEach((s: any) => { map[s.key] = s.value })
+    return map
+  } catch {
+    return {}
+  }
 }
 
 function SectionHead({ eyebrow, title, link }: { eyebrow: string; title: string; link?: string }) {
