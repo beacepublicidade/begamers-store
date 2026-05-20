@@ -33,6 +33,14 @@ async function getProducts(limit = 8) {
   return (data ?? []) as unknown as ProductWithImages[]
 }
 
+async function getBannerSettings() {
+  const supabase = createClient()
+  const { data } = await supabase.from('settings').select('key, value')
+  const map: Record<string, string> = {}
+  ;(data ?? []).forEach((s: any) => { map[s.key] = s.value })
+  return map
+}
+
 function SectionHead({ eyebrow, title, link }: { eyebrow: string; title: string; link?: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28, gap: 16 }}>
@@ -59,9 +67,25 @@ const TICKER_ITEMS = [
 ]
 
 export default async function HomePage() {
-  const products = await getProducts(8)
+  const [products, banner] = await Promise.all([getProducts(8), getBannerSettings()])
   const bestSellers = products.slice(0, 4)
   const streetwear = products.slice(4, 8)
+
+  const b = {
+    badge:       banner.banner_badge        || '● LIVE — PRÉ-VENDA',
+    eyebrow:     banner.banner_eyebrow      || '// EP.01 / DROP 2026',
+    title1:      banner.banner_title1       || 'ENTRA',
+    title2:      banner.banner_title2       || 'NO SERVER.',
+    productName: banner.banner_product_name || 'VIPER X9',
+    productDesc: banner.banner_product_desc || 'Mouse sem fio · 26K DPI · 90h',
+    price:       banner.banner_price        || 'R$ 449,90',
+    priceOld:    banner.banner_price_old    || 'de R$ 599,90',
+    stock:       banner.banner_stock        || '378 un.',
+    stockSub:    banner.banner_stock_sub    || 'Limitado a 1 por CPF',
+    ctaText:     banner.banner_cta_text     || 'COMPRAR AGORA',
+    ctaUrl:      banner.banner_cta_url      || '/produtos',
+    imageUrl:    banner.banner_image_url    || '',
+  }
 
   return (
     <div style={{ background: '#000', color: '#fff' }}>
@@ -123,8 +147,8 @@ export default async function HomePage() {
               padding: '6px 12px', background: 'var(--bg-accent-hot)', color: '#fff',
               fontFamily: 'var(--font-display-heavy)', fontSize: 11, letterSpacing: '0.16em',
               textTransform: 'uppercase', clipPath: 'polygon(8% 0, 100% 0, 92% 100%, 0 100%)',
-            }}>● LIVE — PRÉ-VENDA</span>
-            <span className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>// EP.01 / DROP 2026</span>
+            }}>{b.badge}</span>
+            <span className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>{b.eyebrow}</span>
           </div>
 
           <h1 style={{
@@ -132,41 +156,42 @@ export default async function HomePage() {
             fontSize: 168, lineHeight: 0.82, letterSpacing: '-0.05em',
             textTransform: 'uppercase', maxWidth: 1000,
           }}>
-            ENTRA<br />
-            NO{' '}
+            {b.title1}<br />
             <span style={{
               background: 'var(--bg-accent)', color: '#fff', padding: '0 16px',
               clipPath: 'polygon(4% 0, 100% 0, 96% 100%, 0 100%)',
-            }}>SERVER.</span>
+            }}>{b.title2}</span>
           </h1>
 
           <div style={{ display: 'flex', gap: 80, marginTop: 48, maxWidth: 720 }}>
             <div>
               <div className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>// PRODUTO EM DESTAQUE</div>
-              <div style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 28, marginTop: 6, textTransform: 'uppercase' }}>VIPER X9</div>
-              <div style={{ fontSize: 13, color: 'var(--fg2)', marginTop: 4 }}>Mouse sem fio · 26K DPI · 90h</div>
+              <div style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 28, marginTop: 6, textTransform: 'uppercase' }}>{b.productName}</div>
+              <div style={{ fontSize: 13, color: 'var(--fg2)', marginTop: 4 }}>{b.productDesc}</div>
             </div>
             <div>
               <div className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>// PREÇO</div>
-              <div style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 32, marginTop: 6, color: 'var(--bg-accent-hot)' }}>R$ 449,90</div>
-              <div style={{ fontSize: 13, color: 'var(--fg2)', marginTop: 4, textDecoration: 'line-through' }}>de R$ 599,90</div>
+              <div style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 32, marginTop: 6, color: 'var(--bg-accent-hot)' }}>{b.price}</div>
+              {b.priceOld && <div style={{ fontSize: 13, color: 'var(--fg2)', marginTop: 4, textDecoration: 'line-through' }}>{b.priceOld}</div>}
             </div>
-            <div>
-              <div className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>// ESTOQUE</div>
-              <div style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 28, marginTop: 6 }}>378 un.</div>
-              <div style={{ fontSize: 13, color: 'var(--fg2)', marginTop: 4 }}>Limitado a 1 por CPF</div>
-            </div>
+            {b.stock && (
+              <div>
+                <div className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>// ESTOQUE</div>
+                <div style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 28, marginTop: 6 }}>{b.stock}</div>
+                <div style={{ fontSize: 13, color: 'var(--fg2)', marginTop: 4 }}>{b.stockSub}</div>
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: 12, marginTop: 40 }}>
-            <Link href="/produtos" style={{
+            <Link href={b.ctaUrl} style={{
               display: 'inline-flex', alignItems: 'center', gap: 10,
               background: 'var(--bg-accent-hot)', color: '#fff', padding: '16px 32px',
               fontFamily: 'var(--font-display-heavy)', fontSize: 14, letterSpacing: '0.08em',
               textTransform: 'uppercase', textDecoration: 'none',
               clipPath: 'polygon(0 0, 100% 0, 96% 100%, 4% 100%)',
             }}>
-              <Icon name="bolt" size={20} /> RESERVA O TEU
+              <Icon name="bolt" size={20} /> {b.ctaText}
             </Link>
             <Link href="/produtos" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -175,7 +200,7 @@ export default async function HomePage() {
               textTransform: 'uppercase', textDecoration: 'none',
               border: '1px solid var(--hair-strong)',
             }}>
-              Ver specs completas →
+              Ver todos os produtos →
             </Link>
           </div>
         </div>

@@ -20,7 +20,8 @@ const NAV = [
     { href: '/admin/categorias', label: 'Categorias', icon: 'menu' },
   ]},
   { sec: 'CONFIG', items: [
-    { href: '/admin/configuracoes', label: 'Loja', icon: 'shield' },
+    { href: '/admin/banners',       label: 'Banners',  icon: 'bolt' },
+    { href: '/admin/configuracoes', label: 'Loja',     icon: 'shield' },
   ]},
 ]
 
