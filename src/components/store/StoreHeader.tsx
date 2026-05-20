@@ -72,7 +72,7 @@ export default function StoreHeader({ activeCategory }: { activeCategory?: strin
         display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 32, alignItems: 'center',
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center' }}>
-          <Image src="/images/logo.png" alt="BeGamers Store" width={160} height={40} style={{ objectFit: 'contain' }} priority />
+          <Image src="/images/logo-white.png" alt="BeGamers Store" width={160} height={40} style={{ objectFit: 'contain' }} priority />
         </Link>
 
         {/* Search */}

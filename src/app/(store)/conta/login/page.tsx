@@ -90,7 +90,7 @@ function ContaLoginInner() {
 
         <div style={{ position: 'relative', zIndex: 2 }}>
           <Link href="/">
-            <Image src="/images/logo.png" alt="BeGamers Store" width={140} height={36} style={{ objectFit: 'contain' }} />
+            <Image src="/images/logo-white.png" alt="BeGamers Store" width={140} height={36} style={{ objectFit: 'contain' }} />
           </Link>
         </div>
 

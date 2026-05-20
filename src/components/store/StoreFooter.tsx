@@ -36,7 +36,7 @@ export default function StoreFooter() {
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '56px 32px 32px', display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr 1fr', gap: 32 }}>
         <div>
           <div style={{ marginBottom: 16 }}>
-            <Image src="/images/logo.png" alt="BeGamers Store" width={160} height={40} style={{ objectFit: 'contain' }} />
+            <Image src="/images/logo-white.png" alt="BeGamers Store" width={160} height={40} style={{ objectFit: 'contain' }} />
           </div>
           <p style={{ color: 'var(--fg2)', fontSize: 13, marginTop: 0, lineHeight: 1.6 }}>
             A loja oficial da comunidade BEGAMERS. Periféricos, streetwear, colecionáveis.

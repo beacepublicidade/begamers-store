@@ -19,6 +19,7 @@ interface CartStore {
   addItem: (item: CartItem) => void
   removeItem: (id: string) => void
   updateQty: (id: string, qty: number) => void
+  clearCart: () => void
   openCart: () => void
   closeCart: () => void
 }
@@ -66,6 +67,11 @@ export function useCart(): CartStore {
     notify()
   }, [])
 
+  const clearCart = useCallback(() => {
+    globalCart = []
+    notify()
+  }, [])
+
   const totalItems = items.reduce((acc, i) => acc + i.quantity, 0)
   const totalPrice = items.reduce((acc, i) => acc + i.price * i.quantity, 0)
 
@@ -78,6 +84,7 @@ export function useCart(): CartStore {
     addItem,
     removeItem,
     updateQty,
+    clearCart,
     openCart: () => setIsOpen(true),
     closeCart: () => setIsOpen(false),
   }

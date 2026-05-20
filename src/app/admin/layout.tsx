@@ -55,7 +55,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <VMark />
             <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1, gap: 4 }}>
-              <Image src="/images/logo.png" alt="BeGamers Store" width={100} height={24} style={{ objectFit: 'contain', objectPosition: 'left' }} />
+              <Image src="/images/logo-white.png" alt="BeGamers Store" width={100} height={24} style={{ objectFit: 'contain', objectPosition: 'left' }} />
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--fg2)', letterSpacing: '0.2em', textTransform: 'uppercase' }}>// CONSOLE ADMIN</span>
             </div>
           </div>
