@@ -1,7 +1,8 @@
 'use client'
-import { Suspense, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense, useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { signUpAction } from './actions'
 import Link from 'next/link'
 import Image from 'next/image'
 import Icon from '@/components/ui/Icon'
@@ -30,10 +31,10 @@ export default function ContaLoginPage() {
 }
 
 function ContaLoginInner() {
-  const router = useRouter()
   const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect') ?? '/conta/minha-conta'
+  const redirectTo = searchParams.get('redirect') ?? '/conta/minha-conta'
 
+  const [cfg, setCfg] = useState({ title1: 'ENTRA', title2: 'NO SERVER.', eyebrow: '// COMUNIDADE BEGAMERS', subtitle: 'Cadastra-se e desbloqueia: drops exclusivos, cupons só pra membro, 10% off em todo PIX.' })
   const [tab, setTab] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -42,31 +43,46 @@ function ContaLoginInner() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  const supabase = createClient()
+  useEffect(() => {
+    fetch('/api/admin/configuracoes')
+      .then(r => r.json())
+      .then((rows: Array<{ key: string; value: string }>) => {
+        if (!Array.isArray(rows)) return
+        const m: Record<string, string> = {}
+        for (const r of rows) m[r.key] = r.value
+        setCfg(prev => ({
+          title1:   m.login_title1   || prev.title1,
+          title2:   m.login_title2   || prev.title2,
+          eyebrow:  m.login_eyebrow  || prev.eyebrow,
+          subtitle: m.login_subtitle || prev.subtitle,
+        }))
+      })
+      .catch(() => null)
+  }, [])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    setLoading(false)
-    if (error) { setError(error.message); return }
-    router.push(redirect)
-    router.refresh()
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      setLoading(false)
+      if (error) { setError(error.message); return }
+      window.location.href = redirectTo
+    } catch (err: any) {
+      setLoading(false)
+      setError(err?.message ?? 'Erro ao fazer login')
+    }
   }
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { name } } })
-    if (error) { setError(error.message); setLoading(false); return }
-
-    if (data.user) {
-      await supabase.from('customers').upsert({ email, name } as never, { onConflict: 'email' })
-    }
-
+    const result = await signUpAction(email, password, name)
     setLoading(false)
+    if (result?.error) { setError(result.error); return }
     setSuccess('Conta criada! Verifique seu e-mail para confirmar.')
   }
 
@@ -83,6 +99,8 @@ function ContaLoginInner() {
       <div style={{
         position: 'relative', overflow: 'hidden',
         background: 'linear-gradient(135deg, #1a0006 0%, #000 60%)',
+        backgroundImage: 'var(--login-bg-image, none)',
+        backgroundSize: 'cover', backgroundPosition: 'center',
         padding: 64, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
       }}>
         <div className="chevron-bg" style={{ position: 'absolute', inset: 0, opacity: 0.4 }} />
@@ -95,13 +113,12 @@ function ContaLoginInner() {
         </div>
 
         <div style={{ position: 'relative', zIndex: 2 }}>
-          <span className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>// COMUNIDADE BEGAMERS</span>
+          <span className="eyebrow-mono" style={{ color: 'var(--bg-accent-hot)' }}>{cfg.eyebrow}</span>
           <h1 style={{ margin: '16px 0', fontFamily: 'var(--font-display-heavy)', fontSize: 88, lineHeight: 0.82, textTransform: 'uppercase', letterSpacing: '-0.04em' }}>
-            ENTRA<br />NO <span style={{ background: 'var(--bg-accent)', padding: '0 12px', display: 'inline-block', clipPath: 'polygon(4% 0, 100% 0, 96% 100%, 0 100%)' }}>SERVER.</span>
+            {cfg.title1}<br />
+            <span style={{ background: 'var(--bg-accent)', padding: '0 12px', display: 'inline-block', clipPath: 'polygon(4% 0, 100% 0, 96% 100%, 0 100%)' }}>{cfg.title2}</span>
           </h1>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15, maxWidth: 440, lineHeight: 1.6 }}>
-            Cadastra-se e desbloqueia: drops exclusivos, cupons só pra membro, 10% off em todo PIX.
-          </p>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15, maxWidth: 440, lineHeight: 1.6 }}>{cfg.subtitle}</p>
         </div>
 
         <div style={{ position: 'relative', zIndex: 2, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, maxWidth: 480 }}>

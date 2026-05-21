@@ -1,35 +1,45 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
 
-  // Admin routes protection
   if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
-    const session = req.cookies.get('admin_session')?.value
+    const session = request.cookies.get('admin_session')?.value
     const secret = process.env.ADMIN_SECRET
-
     if (!secret || session !== secret) {
-      const loginUrl = new URL('/admin/login', req.url)
-      return NextResponse.redirect(loginUrl)
+      return NextResponse.redirect(new URL('/admin/login', request.url))
     }
+    return NextResponse.next()
   }
 
-  // Customer account protection
-  if (pathname.startsWith('/conta/minha-conta') || pathname.startsWith('/conta/pedidos')) {
-    const session = req.cookies.get('sb-access-token')?.value
-      ?? req.cookies.get(`sb-${process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0]}-auth-token`)?.value
+  let response = NextResponse.next({ request })
 
-    if (!session) {
-      const loginUrl = new URL('/conta/login', req.url)
-      loginUrl.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(loginUrl)
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!.trim(),
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!.trim(),
+    {
+      cookies: {
+        getAll() { return request.cookies.getAll() },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+        },
+      },
     }
-  }
+  )
 
-  return NextResponse.next()
+  await supabase.auth.getUser()
+
+  return response
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/conta/minha-conta/:path*', '/conta/pedidos/:path*'],
+  matcher: [
+    '/admin/:path*',
+    '/((?!_next/static|_next/image|favicon.ico|images|api).*)',
+  ],
 }
