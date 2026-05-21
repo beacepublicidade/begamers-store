@@ -24,11 +24,24 @@ interface CartStore {
   closeCart: () => void
 }
 
-let globalCart: CartItem[] = []
+const STORAGE_KEY = 'bgs_cart'
+
+function loadCart(): CartItem[] {
+  if (typeof window === 'undefined') return []
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]') } catch { return [] }
+}
+
+function saveCart(items: CartItem[]) {
+  if (typeof window === 'undefined') return
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)) } catch {}
+}
+
+let globalCart: CartItem[] = loadCart()
 let globalIsOpen = false
 let listeners: Array<() => void> = []
 
 function notify() {
+  saveCart(globalCart)
   listeners.forEach(fn => fn())
 }
 
@@ -70,6 +83,7 @@ export function useCart(): CartStore {
 
   const clearCart = useCallback(() => {
     globalCart = []
+    saveCart([])
     notify()
   }, [])
 

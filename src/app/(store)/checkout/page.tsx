@@ -79,7 +79,7 @@ function CardInput({ label, ...props }: React.InputHTMLAttributes<HTMLInputEleme
 }
 
 export default function CheckoutPage() {
-  const { items, total, totalItems, clearCart } = useCart()
+  const { items, total, totalItems, clearCart, removeItem } = useCart()
   const [step, setStep] = useState<Step>('identificacao')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -648,7 +648,7 @@ export default function CheckoutPage() {
 
               <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12, borderBottom: '1px solid var(--hair)' }}>
                 {items.map(item => (
-                  <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '44px 1fr auto', gap: 10, alignItems: 'center' }}>
+                  <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '44px 1fr auto auto', gap: 10, alignItems: 'center' }}>
                     <div style={{ width: 44, height: 44, background: 'var(--surf-3)', position: 'relative', overflow: 'hidden' }}>
                       {item.image
                         ? <Image src={item.image} alt={item.name} fill style={{ objectFit: 'contain', padding: 3 }} sizes="44px" />
@@ -664,6 +664,7 @@ export default function CheckoutPage() {
                     <div style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 13, flexShrink: 0 }}>
                       {fmt(item.price * item.quantity)}
                     </div>
+                    <button onClick={() => removeItem(item.id)} title="Remover" style={{ background: 'transparent', border: 0, color: 'var(--fg3)', cursor: 'pointer', padding: 2, lineHeight: 1, fontSize: 14 }}>×</button>
                   </div>
                 ))}
               </div>
