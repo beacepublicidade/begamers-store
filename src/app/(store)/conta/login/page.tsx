@@ -1,8 +1,7 @@
 'use client'
 import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { signUpAction } from './actions'
+import { signInAction, signUpAction } from './actions'
 import Link from 'next/link'
 import Image from 'next/image'
 import Icon from '@/components/ui/Icon'
@@ -65,21 +64,14 @@ function ContaLoginInner() {
     setLoading(true)
     setError('')
     setSuccess('')
-    try {
-      const fd = new FormData(e.currentTarget)
-      const emailVal = (fd.get('email') as string ?? '').trim()
-      const passwordVal = fd.get('password') as string ?? ''
-      const supabase = createClient()
-      const { error, data } = await supabase.auth.signInWithPassword({ email: emailVal, password: passwordVal })
-      setLoading(false)
-      if (error) { setError('ERRO AUTH: ' + error.message); return }
-      if (!data?.session) { setError('Login ok mas sem sessão — tente novamente'); return }
-      setSuccess('✅ Autenticado! Redirecionando...')
-      window.location.href = redirectTo
-    } catch (err: any) {
-      setLoading(false)
-      setError('EXCEÇÃO: ' + (err?.message ?? 'desconhecido'))
-    }
+    const fd = new FormData(e.currentTarget)
+    const emailVal = (fd.get('email') as string ?? '').trim()
+    const passwordVal = fd.get('password') as string ?? ''
+    const result = await signInAction(emailVal, passwordVal)
+    setLoading(false)
+    if (result?.error) { setError('ERRO: ' + result.error); return }
+    setSuccess('✅ Autenticado! Redirecionando...')
+    window.location.href = redirectTo
   }
 
   async function handleSignup(e: React.FormEvent) {
