@@ -121,7 +121,7 @@ export default function CheckoutPage() {
   const selectedShipping = shippingOptions.find(s => s.id === selectedShippingId)
   const shippingCost = freeShipping ? 0 : (selectedShipping?.price ?? 0)
   const orderTotal = total - discount + shippingCost
-  const pixPrice = Math.round(orderTotal * 0.9)
+  const pixPrice = Math.max(0.01, Math.round(orderTotal * 0.9 * 100) / 100)
 
   const currentIdx = STEPS.findIndex(s => s.id === step)
   function isDone(id: Step) { return currentIdx > STEPS.findIndex(s => s.id === id) }
@@ -721,7 +721,7 @@ export default function CheckoutPage() {
               <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {[
                   ['Subtotal', fmt(total)],
-                  ...(discount > 0 ? [['Cupom ' + couponCode, '−' + fmt(discount), '#4cd680']] : []),
+                  ...(couponApplied ? [['Cupom ' + couponCode, discount > 0 ? '−' + fmt(discount) : 'FRETE GRÁTIS', '#4cd680']] : []),
                   ['Frete', freeShipping ? 'GRÁTIS' : fmt(shippingCost), freeShipping ? '#4cd680' : undefined],
                 ].map(([k, v, c]) => (
                   <div key={String(k)} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
