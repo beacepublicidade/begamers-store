@@ -30,7 +30,7 @@ export async function POST(req: Request) {
       .from('order_tracking')
       .select('id, events')
       .eq('me_shipment_id', shipmentId)
-      .maybeSingle()
+      .maybeSingle() as unknown as { data: { id: string; events: any[] } | null }
 
     if (!record) return NextResponse.json({ received: true })
 
