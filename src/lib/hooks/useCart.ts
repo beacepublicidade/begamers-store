@@ -25,6 +25,7 @@ interface CartStore {
 }
 
 let globalCart: CartItem[] = []
+let globalIsOpen = false
 let listeners: Array<() => void> = []
 
 function notify() {
@@ -36,7 +37,7 @@ export function useCart(): CartStore {
   const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
-    const update = () => setItems([...globalCart])
+    const update = () => { setItems([...globalCart]); setIsOpen(globalIsOpen) }
     listeners.push(update)
     return () => { listeners = listeners.filter(l => l !== update) }
   }, [])
@@ -48,8 +49,8 @@ export function useCart(): CartStore {
     } else {
       globalCart.push({ ...item, quantity: item.quantity ?? 1 })
     }
+    globalIsOpen = true
     notify()
-    setIsOpen(true)
   }, [])
 
   const removeItem = useCallback((id: string) => {
@@ -85,7 +86,7 @@ export function useCart(): CartStore {
     removeItem,
     updateQty,
     clearCart,
-    openCart: () => setIsOpen(true),
-    closeCart: () => setIsOpen(false),
+    openCart: () => { globalIsOpen = true; notify() },
+    closeCart: () => { globalIsOpen = false; notify() },
   }
 }
