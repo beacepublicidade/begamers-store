@@ -6,7 +6,7 @@ import Link from 'next/link'
 import Icon from '@/components/ui/Icon'
 
 function fmt(v: number) {
-  return 'R$ ' + (v / 100).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  return 'R$ ' + v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
 
 const QTY_BTN: React.CSSProperties = {
@@ -21,7 +21,7 @@ export default function CartDrawer() {
   useEffect(() => setMounted(true), [])
   if (!mounted) return null
 
-  const pixTotal = Math.round(total * 0.9)
+  const pixTotal = Math.round(total * 0.9 * 100) / 100
 
   return (
     <>

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Icon from '@/components/ui/Icon'
 
 function fmt(v: number) {
-  return 'R$ ' + (v / 100).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  return 'R$ ' + Number(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
 
 const STATUS: Record<string, { l: string; c: string; bg: string }> = {

@@ -17,7 +17,7 @@ const STEPS: { id: Step; label: string }[] = [
 ]
 
 function fmt(v: number) {
-  return 'R$ ' + (v / 100).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  return 'R$ ' + v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
 
 const INPUT: React.CSSProperties = {
@@ -105,7 +105,7 @@ export default function CheckoutPage() {
   // Order result
   const [orderResult, setOrderResult] = useState<{ orderNumber: string; email: string } | null>(null)
 
-  const shippingCost = shipping === 'pac' ? 1590 : 2990
+  const shippingCost = shipping === 'pac' ? 15.90 : 29.90
   const orderTotal = total - discount + shippingCost
   const pixPrice = Math.round(orderTotal * 0.9)
 
@@ -255,8 +255,8 @@ export default function CheckoutPage() {
     <div style={{ background: '#000', color: '#fff' }}>
       <header style={{ background: '#000', borderBottom: '1px solid var(--hair-strong)' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '20px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Link href="/" style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 20, letterSpacing: '0.04em', textTransform: 'uppercase', textDecoration: 'none', color: '#fff' }}>
-            <span style={{ color: 'var(--bg-accent)' }}>BE</span>GAMERS STORE
+          <Link href="/">
+            <Image src="/images/logo-white.png" alt="BeGamers Store" width={140} height={36} style={{ objectFit: 'contain' }} />
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#4cd680', fontSize: 12, fontFamily: 'var(--font-mono)', letterSpacing: '0.1em' }}>
             <Icon name="lock" size={14} color="#4cd680" /> CHECKOUT SEGURO · SSL 256-BIT
