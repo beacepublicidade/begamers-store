@@ -385,8 +385,8 @@ export default function CheckoutPage() {
                 <div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {[
-                      { id: 'sedex', label: 'SEDEX', desc: 'Entrega em 2-4 dias úteis', price: 2990 },
-                      { id: 'pac',   label: 'PAC',   desc: 'Entrega em 8-12 dias úteis', price: 1590 },
+                      { id: 'sedex', label: 'SEDEX', desc: 'Entrega em 2-4 dias úteis', price: 29.90 },
+                      { id: 'pac',   label: 'PAC',   desc: 'Entrega em 8-12 dias úteis', price: 15.90 },
                     ].map(opt => (
                       <label key={opt.id} style={{
                         display: 'flex', alignItems: 'center', gap: 14, padding: 16, cursor: 'pointer',
