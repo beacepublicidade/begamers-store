@@ -20,7 +20,7 @@ async function upsertCustomer(supabase: any, customer: any): Promise<string | nu
 }
 
 async function createOrder(supabase: any, customerId: string | null, body: any) {
-  const { customer, address, items, shipping_method, shipping_cost, payment_method, coupon_code, discount, subtotal, total } = body
+  const { items, shipping_cost, payment_method, coupon_code, discount, subtotal, total } = body
   const { data: order, error } = await supabase
     .from('orders')
     .insert({
@@ -30,6 +30,7 @@ async function createOrder(supabase: any, customerId: string | null, body: any) 
       payment_status: 'pending',
       subtotal,
       discount: discount ?? 0,
+      shipping: shipping_cost ?? 0,
       total,
     } as never)
     .select('id, order_number')
