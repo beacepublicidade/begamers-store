@@ -114,7 +114,7 @@ export default function CheckoutPage() {
   // Order result
   const [orderResult, setOrderResult] = useState<{ orderNumber: string; email: string } | null>(null)
 
-  const shippingCost = shipping === 'pac' ? 15.90 : shipping === 'gratis' ? 0 : 29.90
+  const shippingCost = shipping === 'pac' ? 15.90 : 29.90
   const orderTotal = total - discount + shippingCost
   const pixPrice = Math.round(orderTotal * 0.9)
 
@@ -403,7 +403,6 @@ export default function CheckoutPage() {
                 <div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {[
-                      { id: 'gratis', label: 'FRETE GRÁTIS', desc: 'Retirada ou frete promocional', price: 0 },
                       { id: 'sedex', label: 'SEDEX', desc: 'Entrega em 2-4 dias úteis', price: 29.90 },
                       { id: 'pac',   label: 'PAC',   desc: 'Entrega em 8-12 dias úteis', price: 15.90 },
                     ].map(opt => (
