@@ -7,6 +7,7 @@ import Icon from '@/components/ui/Icon'
 
 type Step = 'identificacao' | 'endereco' | 'frete' | 'pagamento' | 'confirmacao'
 type PayMethod = 'pix' | 'credit' | 'boleto'
+type ShippingOption = { id: number; name: string; company: string; price: number; delivery_time: number }
 
 const STEPS: { id: Step; label: string }[] = [
   { id: 'identificacao', label: 'IDENTIFICAÇÃO' },
@@ -95,7 +96,9 @@ export default function CheckoutPage() {
 
   const [customer, setCustomer] = useState({ name: '', email: '', cpf: '', phone: '' })
   const [address, setAddress] = useState({ zip: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: '' })
-  const [shipping, setShipping] = useState<'pac' | 'sedex'>('sedex')
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([])
+  const [selectedShippingId, setSelectedShippingId] = useState<number | null>(null)
+  const [loadingShipping, setLoadingShipping] = useState(false)
   const [payment, setPayment] = useState<PayMethod>('pix')
   const [couponCode, setCouponCode] = useState('')
   const [discount, setDiscount] = useState(0)
@@ -115,7 +118,8 @@ export default function CheckoutPage() {
   // Order result
   const [orderResult, setOrderResult] = useState<{ orderNumber: string; email: string } | null>(null)
 
-  const shippingCost = freeShipping ? 0 : shipping === 'pac' ? 15.90 : 29.90
+  const selectedShipping = shippingOptions.find(s => s.id === selectedShippingId)
+  const shippingCost = freeShipping ? 0 : (selectedShipping?.price ?? 0)
   const orderTotal = total - discount + shippingCost
   const pixPrice = Math.round(orderTotal * 0.9)
 
@@ -151,6 +155,26 @@ export default function CheckoutPage() {
         }
       } catch { /* ignore */ }
     }, 3000)
+  }
+
+  async function handleEnderecoNext() {
+    if (!address.zip) return
+    setLoadingShipping(true)
+    try {
+      const res = await fetch('/api/shipping/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cep: address.zip }),
+      })
+      if (res.ok) {
+        const opts: ShippingOption[] = await res.json()
+        setShippingOptions(opts)
+        if (opts.length > 0) setSelectedShippingId(opts[0].id)
+      }
+    } catch { /* ignore */ } finally {
+      setLoadingShipping(false)
+    }
+    next()
   }
 
   async function applyCoupon() {
@@ -384,7 +408,7 @@ export default function CheckoutPage() {
                   </div>
                   <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
                     <button onClick={() => setStep('identificacao')} style={BACK_BTN}>← Voltar</button>
-                    <button onClick={next} disabled={!address.zip || !address.street || !address.number} style={CONTINUE_BTN}>Continuar →</button>
+                    <button onClick={handleEnderecoNext} disabled={!address.zip || !address.street || !address.number} style={CONTINUE_BTN}>Continuar →</button>
                   </div>
                 </div>
               )}
@@ -403,34 +427,39 @@ export default function CheckoutPage() {
             <CheckoutSection title="Opção de entrega" done={isDone('frete')} active={isActive('frete')} pending={isPending('frete')}>
               {isActive('frete') && (
                 <div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {[
-                      { id: 'sedex', label: 'SEDEX', desc: 'Entrega em 2-4 dias úteis', price: 29.90 },
-                      { id: 'pac',   label: 'PAC',   desc: 'Entrega em 8-12 dias úteis', price: 15.90 },
-                    ].map(opt => (
-                      <label key={opt.id} style={{
-                        display: 'flex', alignItems: 'center', gap: 14, padding: 16, cursor: 'pointer',
-                        background: shipping === opt.id ? 'rgba(255,31,61,0.06)' : 'var(--surf-1)',
-                        border: shipping === opt.id ? '2px solid var(--bg-accent-hot)' : '1px solid var(--hair-strong)',
-                      }}>
-                        <span style={{ width: 18, height: 18, borderRadius: 99, flexShrink: 0, border: '2px solid var(--bg-accent-hot)', background: shipping === opt.id ? 'var(--bg-accent-hot)' : 'transparent' }} />
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 14, letterSpacing: '0.06em' }}>{opt.label}</div>
-                          <div style={{ fontSize: 12, color: 'var(--fg2)', marginTop: 2 }}>{opt.desc}</div>
-                        </div>
-                        <span style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 14 }}>{fmt(opt.price)}</span>
-                        <input type="radio" value={opt.id} checked={shipping === opt.id} onChange={() => setShipping(opt.id as any)} style={{ display: 'none' }} />
-                      </label>
-                    ))}
-                  </div>
+                  {loadingShipping ? (
+                    <div style={{ textAlign: 'center', padding: 40, color: 'var(--fg2)', fontSize: 14 }}>Calculando frete...</div>
+                  ) : shippingOptions.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: 40, color: 'var(--fg2)', fontSize: 14 }}>Nenhuma opção disponível para esse CEP.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {shippingOptions.map(opt => (
+                        <label key={opt.id} style={{
+                          display: 'flex', alignItems: 'center', gap: 14, padding: 16, cursor: 'pointer',
+                          background: selectedShippingId === opt.id ? 'rgba(255,31,61,0.06)' : 'var(--surf-1)',
+                          border: selectedShippingId === opt.id ? '2px solid var(--bg-accent-hot)' : '1px solid var(--hair-strong)',
+                        }}>
+                          <span style={{ width: 18, height: 18, borderRadius: 99, flexShrink: 0, border: '2px solid var(--bg-accent-hot)', background: selectedShippingId === opt.id ? 'var(--bg-accent-hot)' : 'transparent' }} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 14, letterSpacing: '0.06em' }}>{opt.name} · {opt.company}</div>
+                            <div style={{ fontSize: 12, color: 'var(--fg2)', marginTop: 2 }}>{opt.delivery_time} dias úteis</div>
+                          </div>
+                          <span style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 14 }}>{fmt(opt.price)}</span>
+                          <input type="radio" checked={selectedShippingId === opt.id} onChange={() => setSelectedShippingId(opt.id)} style={{ display: 'none' }} />
+                        </label>
+                      ))}
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
                     <button onClick={() => setStep('endereco')} style={BACK_BTN}>← Voltar</button>
-                    <button onClick={next} style={CONTINUE_BTN}>Continuar →</button>
+                    <button onClick={next} disabled={selectedShippingId === null && !freeShipping} style={CONTINUE_BTN}>Continuar →</button>
                   </div>
                 </div>
               )}
               {isDone('frete') && (
-                <div style={{ fontSize: 13, color: 'var(--fg2)' }}>{shipping.toUpperCase()} · {fmt(shippingCost)}</div>
+                <div style={{ fontSize: 13, color: 'var(--fg2)' }}>
+                  {freeShipping ? 'Frete Grátis' : `${selectedShipping?.name ?? 'Frete'} · ${fmt(shippingCost)}`}
+                </div>
               )}
             </CheckoutSection>
 
@@ -693,7 +722,7 @@ export default function CheckoutPage() {
                 {[
                   ['Subtotal', fmt(total)],
                   ...(discount > 0 ? [['Cupom ' + couponCode, '−' + fmt(discount), '#4cd680']] : []),
-                  ['Frete ' + shipping.toUpperCase(), fmt(shippingCost), undefined],
+                  ['Frete', freeShipping ? 'GRÁTIS' : fmt(shippingCost), freeShipping ? '#4cd680' : undefined],
                 ].map(([k, v, c]) => (
                   <div key={String(k)} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                     <span style={{ color: 'var(--fg2)' }}>{k}</span>
