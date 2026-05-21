@@ -1,6 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { hasTransparentCredentials, createPixTransaction, createCardTransaction } from '@/lib/infinitepay'
 import { sendOrderConfirmationEmail } from '@/lib/email'
 
 async function upsertCustomer(supabase: any, customer: any): Promise<string | null> {
@@ -67,12 +66,11 @@ export async function POST(req: Request) {
   try {
     const supabase = createAdminClient()
     const body = await req.json()
-    const { customer, payment_method, total, card_token, installments } = body
+    const { customer, payment_method } = body
 
     const customerId = await upsertCustomer(supabase, customer)
     const order = await createOrder(supabase, customerId, body)
 
-    // fire-and-forget — never blocks checkout
     sendOrderConfirmationEmail({
       orderNumber: order.order_number,
       customerName: customer.name,
@@ -85,56 +83,40 @@ export async function POST(req: Request) {
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://begamerstore.com.br'
     const webhookUrl = `${baseUrl}/api/pagamento/webhook`
-    const transparent = hasTransparentCredentials()
+    const handle = process.env.INFINITEPAY_HANDLE
 
-    // ── PIX transparente ───────────────────────────────────────────────────────
-    if (payment_method === 'pix' && transparent) {
-      const pixAmount = Math.round(total * 0.9)
-      const { br_code, transaction_id } = await createPixTransaction({
-        amount: pixAmount,
-        orderId: order.id,
-        customer,
-        webhookUrl,
-      })
-      if (transaction_id) {
-        await supabase.from('orders').update({ notes: `ip_tx:${transaction_id}` } as never).eq('id', order.id)
-      }
-      return NextResponse.json({ ok: true, order_id: order.id, order_number: order.order_number, br_code }, { status: 201 })
+    if (!handle) {
+      return NextResponse.json({ error: 'INFINITEPAY_HANDLE env var não configurada' }, { status: 500 })
     }
 
-    // ── Cartão transparente ────────────────────────────────────────────────────
-    if (payment_method === 'credit' && transparent && card_token) {
-      const { status, transaction_id } = await createCardTransaction({
-        amount: total,
-        orderId: order.id,
-        cardToken: card_token,
-        installments: installments ?? 1,
-        customer,
-      })
-      const paid = ['approved', 'authorized', 'captured'].includes(status)
-      if (paid) {
-        await supabase.from('orders').update({ payment_status: 'paid', notes: `ip_tx:${transaction_id}` } as never).eq('id', order.id)
-      }
-      return NextResponse.json({ ok: true, order_id: order.id, order_number: order.order_number, card_status: status, paid }, { status: 201 })
-    }
-
-    // ── Fallback: link InfinitePay (redirect) ─────────────────────────────────
-    const handle = process.env.INFINITEPAY_HANDLE ?? 'red-circle-digital'
     const ipPayload = {
       handle,
-      redirect_url: `${baseUrl}/checkout/sucesso`,
+      redirect_url: `${baseUrl}/checkout/sucesso?order=${order.id}`,
       webhook_url: webhookUrl,
       order_nsu: order.id,
-      items: body.items.map((item: any) => ({ quantity: item.quantity, price: item.price, description: item.product_name })),
+      items: body.items.map((item: any) => ({
+        quantity: item.quantity,
+        price: Math.round(item.price * 100),
+        description: item.product_name,
+      })),
       customer: { name: customer.name, email: customer.email, phone_number: customer.phone ?? '' },
-      address: { cep: body.address.zip ?? '', number: body.address.number ?? '', complement: body.address.complement ?? '' },
+      address: {
+        cep: body.address?.zip ?? '',
+        number: body.address?.number ?? '',
+        complement: body.address?.complement ?? '',
+      },
     }
+
     const ipRes = await fetch('https://api.checkout.infinitepay.io/links', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(ipPayload),
     })
-    if (!ipRes.ok) return NextResponse.json({ error: `InfinitePay error: ${await ipRes.text()}` }, { status: 502 })
+    if (!ipRes.ok) {
+      const errText = await ipRes.text()
+      console.error('[checkout] InfinitePay error:', errText)
+      return NextResponse.json({ error: `InfinitePay error: ${errText}` }, { status: 502 })
+    }
     const { url: paymentUrl } = await ipRes.json() as { url: string }
     return NextResponse.json({ ok: true, order_id: order.id, order_number: order.order_number, payment_url: paymentUrl }, { status: 201 })
 
