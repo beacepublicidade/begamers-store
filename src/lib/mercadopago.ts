@@ -4,6 +4,8 @@ function getClient() {
   return new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN! })
 }
 
+const WEBHOOK_URL = 'https://begamerstore.com.br/api/pagamento/webhook'
+
 export async function createMPPixPayment(opts: {
   amount: number
   orderId: string
@@ -16,6 +18,7 @@ export async function createMPPixPayment(opts: {
       payment_method_id: 'pix',
       description: `Pedido BeGamers #${opts.orderId.slice(-8)}`,
       external_reference: opts.orderId,
+      notification_url: WEBHOOK_URL,
       payer: {
         email: opts.customer.email,
         first_name: parts[0],
@@ -45,6 +48,7 @@ export async function createMPCardPayment(opts: {
       payment_method_id: opts.paymentMethodId,
       description: `Pedido BeGamers #${opts.orderId.slice(-8)}`,
       external_reference: opts.orderId,
+      notification_url: WEBHOOK_URL,
       payer: { email: opts.customer.email },
     },
   })
