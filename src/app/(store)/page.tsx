@@ -1,4 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient as createClient } from '@/lib/supabase/server'
+
+export const dynamic = 'force-dynamic'
 import ProductCard from '@/components/store/ProductCard'
 import type { Tables } from '@/lib/supabase/types'
 import Link from 'next/link'
@@ -23,6 +25,12 @@ function toCardData(p: ProductWithImages) {
   }
 }
 
+async function getProductCount() {
+  const supabase = createClient()
+  const { count } = await supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_active', true)
+  return count ?? 0
+}
+
 async function getProducts(limit = 8) {
   const supabase = createClient()
   const { data } = await supabase
@@ -31,6 +39,27 @@ async function getProducts(limit = 8) {
     .eq('is_active', true)
     .limit(limit)
   return (data ?? []) as unknown as ProductWithImages[]
+}
+
+async function getCategoriesWithCount() {
+  const supabase = createClient()
+  const { data: cats } = await supabase
+    .from('categories')
+    .select('id, name, slug')
+    .eq('is_active', true)
+    .order('sort_order')
+    .order('name')
+  if (!cats?.length) return []
+  const { data: prods } = await supabase
+    .from('products')
+    .select('category_id')
+    .eq('is_active', true)
+    .in('category_id', (cats as Array<{ id: string }>).map(c => c.id))
+  const countMap: Record<string, number> = {}
+  for (const p of ((prods ?? []) as Array<{ category_id: string | null }>)) {
+    if (p.category_id) countMap[p.category_id] = (countMap[p.category_id] || 0) + 1
+  }
+  return (cats as Array<{ id: string; name: string; slug: string }>).map(c => ({ ...c, count: countMap[c.id] ?? 0 }))
 }
 
 async function getBannerSettings() {
@@ -64,16 +93,21 @@ function SectionHead({ eyebrow, title, link }: { eyebrow: string; title: string;
   )
 }
 
-const TICKER_ITEMS = [
-  '🔴 LIVE DROP — COLEÇÃO RANKED', '///', 'VIPER X9 EM PRÉ-VENDA', '///',
-  '10% OFF NO PIX', '///', 'FRETE GRÁTIS ACIMA DE R$ 299', '///',
-  'BLACK GAMER WEEK — ATÉ 70% OFF', '///',
+// Ticker items carregados no server via getBannerSettings()
+
+const CAT_COLORS = [
+  '#cc0000aa', '#1a4a8aaa', '#7a1a8aaa', '#cc4400aa', '#0e4a1faa', '#2a1a4aaa', '#4a3a00aa', '#1a1a4aaa',
 ]
 
 export default async function HomePage() {
-  const [products, banner] = await Promise.all([getProducts(8), getBannerSettings()])
+  const [products, banner, categories, productCount] = await Promise.all([getProducts(8), getBannerSettings(), getCategoriesWithCount(), getProductCount()])
   const bestSellers = products.slice(0, 4)
   const streetwear = products.slice(4, 8)
+  const catBySlug = Object.fromEntries(categories.map(c => [c.slug, c]))
+  const tickerItems = (banner.ticker_text || '🔴 LIVE DROP — COLEÇÃO RANKED /// 10% OFF NO PIX /// FRETE GRÁTIS ACIMA DE R$ 299')
+    .split('///')
+    .map((t: string) => t.trim())
+    .filter(Boolean)
 
   const b = {
     badge:       banner.banner_badge        || '● LIVE — PRÉ-VENDA',
@@ -105,7 +139,9 @@ export default async function HomePage() {
         }}>
           {[0, 1].map(n => (
             <span key={n} style={{ display: 'contents' }}>
-              {TICKER_ITEMS.map((item, i) => <span key={i}>{item}</span>)}
+              {tickerItems.map((item: string, i: number) => (
+                <span key={i} style={{ marginRight: 48 }}>{item}</span>
+              ))}
             </span>
           ))}
         </div>
@@ -214,7 +250,7 @@ export default async function HomePage() {
       <section style={{ padding: '80px 32px', maxWidth: 1280, margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 16, height: 560 }}>
           {/* Big banner */}
-          <Link href="/produtos?categoria=streetwear" style={{
+          <Link href={catBySlug['streetwear'] ? `/produtos?cat=${catBySlug['streetwear'].id}` : '/produtos'} style={{
             position: 'relative', overflow: 'hidden',
             background: 'linear-gradient(135deg, #1a0006 0%, #000 60%)',
             display: 'flex', alignItems: 'flex-end', padding: 48,
@@ -245,7 +281,7 @@ export default async function HomePage() {
 
           {/* Stacked right */}
           <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: 16 }}>
-            <Link href="/produtos?categoria=hardware" style={{
+            <Link href={catBySlug['hardware'] ? `/produtos?cat=${catBySlug['hardware'].id}` : '/produtos'} style={{
               position: 'relative', overflow: 'hidden', padding: 32,
               background: 'linear-gradient(135deg, #1a1a3a 0%, #050530 100%)',
               border: '1px solid var(--hair-strong)',
@@ -259,7 +295,7 @@ export default async function HomePage() {
                 <p style={{ margin: 0, fontSize: 12, color: 'var(--fg2)' }}>até 18x · placa, monitor, gabinete</p>
               </div>
             </Link>
-            <Link href="/produtos?categoria=colecionaveis" style={{
+            <Link href={catBySlug['colecionaveis'] ? `/produtos?cat=${catBySlug['colecionaveis'].id}` : '/produtos'} style={{
               position: 'relative', overflow: 'hidden', padding: 32,
               background: 'linear-gradient(135deg, #2a1a4a 0%, #000 100%)',
               border: '1px solid var(--hair-strong)',
@@ -285,8 +321,8 @@ export default async function HomePage() {
       }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32 }}>
           {[
-            { n: '2.8K+', l: 'PRODUTOS NA LOJA' },
-            { n: '47K',   l: 'GAMERS NA COMUNIDADE' },
+            { n: productCount > 0 ? (productCount >= 1000 ? `${(productCount/1000).toFixed(1)}K` : String(productCount)) : '—', l: 'PRODUTOS NA LOJA' },
+            { n: categories.length > 0 ? String(categories.length) : '—', l: 'CATEGORIAS ATIVAS' },
             { n: '4.9★', l: 'AVALIAÇÃO MÉDIA' },
             { n: '24H',  l: 'POSTAGEM ÚTIL' },
           ].map(s => (
@@ -315,36 +351,35 @@ export default async function HomePage() {
       {/* ── CATEGORIES ── */}
       <section style={{ padding: '0 32px 80px', maxWidth: 1280, margin: '0 auto' }}>
         <SectionHead eyebrow="EXPLORE" title="POR CATEGORIA." />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-          {[
-            { t: 'PERIFÉRICOS',   n: '248', c: '#cc0000', slug: 'perifericos' },
-            { t: 'STREETWEAR',    n: '84',  c: '#1a1a1a', slug: 'streetwear' },
-            { t: 'HARDWARE',      n: '412', c: '#1a4a8a', slug: 'hardware' },
-            { t: 'CONSOLE',       n: '156', c: '#7a1a8a', slug: 'console' },
-            { t: 'COLECIONÁVEIS', n: '73',  c: '#cc4400', slug: 'colecionaveis' },
-            { t: 'GIFT CARDS',    n: '28',  c: '#0e4a1f', slug: 'gift-cards' },
-          ].map(c => (
-            <Link key={c.t} href={`/produtos?categoria=${c.slug}`} style={{
-              position: 'relative', overflow: 'hidden',
-              background: `linear-gradient(135deg, ${c.c}aa 0%, #050505 100%)`,
-              minHeight: 200, padding: 32,
-              display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-              border: '1px solid var(--hair)', textDecoration: 'none', color: '#fff',
-            }}>
-              <div style={{
-                position: 'absolute', top: 0, right: 0, padding: '12px 16px',
-                background: 'rgba(0,0,0,0.4)', fontFamily: 'var(--font-mono)',
-                fontSize: 10, letterSpacing: '0.1em',
-              }}>{c.n} ITENS</div>
-              <span className="eyebrow-mono">// CATEGORIA</span>
-              <h3 style={{ margin: 0, fontFamily: 'var(--font-display-heavy)', fontSize: 36, lineHeight: 0.9, textTransform: 'uppercase', letterSpacing: '-0.02em' }}>{c.t}</h3>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', letterSpacing: '0.1em' }}>EXPLORAR</span>
-                <Icon name="chevR" size={20} />
-              </div>
-            </Link>
-          ))}
-        </div>
+        {categories.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--fg3)', fontSize: 14, border: '1px solid var(--hair)', background: 'var(--surf-1)' }}>
+            Nenhuma categoria cadastrada. <Link href="/admin/categorias" style={{ color: 'var(--bg-accent)', textDecoration: 'none' }}>Cadastre no admin →</Link>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            {categories.slice(0, 6).map((cat, i) => (
+              <Link key={cat.id} href={`/produtos?cat=${cat.id}`} style={{
+                position: 'relative', overflow: 'hidden',
+                background: `linear-gradient(135deg, ${CAT_COLORS[i % CAT_COLORS.length]} 0%, #050505 100%)`,
+                minHeight: 200, padding: 32,
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                border: '1px solid var(--hair)', textDecoration: 'none', color: '#fff',
+              }}>
+                <div style={{
+                  position: 'absolute', top: 0, right: 0, padding: '12px 16px',
+                  background: 'rgba(0,0,0,0.4)', fontFamily: 'var(--font-mono)',
+                  fontSize: 10, letterSpacing: '0.1em',
+                }}>{cat.count} {cat.count === 1 ? 'ITEM' : 'ITENS'}</div>
+                <span className="eyebrow-mono">// CATEGORIA</span>
+                <h3 style={{ margin: 0, fontFamily: 'var(--font-display-heavy)', fontSize: 36, lineHeight: 0.9, textTransform: 'uppercase', letterSpacing: '-0.02em' }}>{cat.name}</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', letterSpacing: '0.1em' }}>EXPLORAR</span>
+                  <Icon name="chevR" size={20} />
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ── STREETWEAR STRIP ── */}

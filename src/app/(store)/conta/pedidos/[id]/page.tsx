@@ -2,8 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import Icon from '@/components/ui/Icon'
-import StoreHeader from '@/components/store/StoreHeader'
-import StoreFooter from '@/components/store/StoreFooter'
 
 interface PageProps { params: { id: string } }
 
@@ -44,8 +42,6 @@ export default async function PedidoClientePage({ params }: PageProps) {
 
   return (
     <div style={{ background: '#000', color: '#fff', minHeight: '100vh' }}>
-      <StoreHeader />
-
       <main style={{ maxWidth: 960, margin: '0 auto', padding: '32px 32px 80px' }}>
 
         {/* Breadcrumb */}
@@ -203,7 +199,6 @@ export default async function PedidoClientePage({ params }: PageProps) {
         </div>
       </main>
 
-      <StoreFooter />
     </div>
   )
 }

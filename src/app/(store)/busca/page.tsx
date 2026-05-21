@@ -1,9 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient as createClient } from '@/lib/supabase/server'
+
+export const dynamic = 'force-dynamic'
 import ProductCard from '@/components/store/ProductCard'
 import Icon from '@/components/ui/Icon'
 import Link from 'next/link'
-import StoreHeader from '@/components/store/StoreHeader'
-import StoreFooter from '@/components/store/StoreFooter'
 
 interface PageProps {
   searchParams: { q?: string; sort?: string }
@@ -43,8 +43,6 @@ export default async function BuscaPage({ searchParams }: PageProps) {
 
   return (
     <div style={{ background: '#000', color: '#fff', minHeight: '100vh' }}>
-      <StoreHeader />
-
       <main style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 32px 80px' }}>
 
         {/* Search bar grande */}
@@ -134,7 +132,6 @@ export default async function BuscaPage({ searchParams }: PageProps) {
         )}
       </main>
 
-      <StoreFooter />
     </div>
   )
 }

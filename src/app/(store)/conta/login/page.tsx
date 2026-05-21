@@ -63,14 +63,12 @@ function ContaLoginInner() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    setSuccess('')
     const fd = new FormData(e.currentTarget)
     const emailVal = (fd.get('email') as string ?? '').trim()
     const passwordVal = fd.get('password') as string ?? ''
     const result = await signInAction(emailVal, passwordVal)
     setLoading(false)
-    if (result?.error) { setError('ERRO: ' + result.error); return }
-    setSuccess('✅ Autenticado! Redirecionando...')
+    if (result?.error) { setError(result.error); return }
     window.location.href = redirectTo
   }
 
@@ -166,7 +164,6 @@ function ContaLoginInner() {
                 <input name="password" className="bg-input" style={INPUT} type="password" autoComplete="current-password" placeholder="••••••••" />
               </div>
               {error && <div style={{ padding: '10px 14px', background: 'rgba(255,31,61,0.1)', border: '1px solid var(--bg-accent-hot)', fontSize: 13, color: '#ff6b6b' }}>{error}</div>}
-              {success && <div style={{ padding: '10px 14px', background: 'rgba(31,157,85,0.1)', border: '1px solid #1f9d55', fontSize: 13, color: '#4cd680' }}>{success}</div>}
               <button type="submit" disabled={loading} style={BTN}>{loading ? 'Entrando...' : 'Entrar no Server'}</button>
             </form>
             <div style={{ marginTop: 20, textAlign: 'center', fontSize: 12, color: 'var(--fg2)' }}>

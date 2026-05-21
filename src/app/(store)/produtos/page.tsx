@@ -1,5 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient as createClient } from '@/lib/supabase/server'
 import ProductCard from '@/components/store/ProductCard'
+
+export const dynamic = 'force-dynamic'
 import Icon from '@/components/ui/Icon'
 import Link from 'next/link'
 

@@ -2,8 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Icon from '@/components/ui/Icon'
-import StoreHeader from '@/components/store/StoreHeader'
-import StoreFooter from '@/components/store/StoreFooter'
 
 function fmt(v: number) {
   return 'R$ ' + (v / 100).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')
@@ -46,8 +44,6 @@ export default async function MinhaContaPage() {
 
   return (
     <div style={{ background: '#000', color: '#fff', minHeight: '100vh' }}>
-      <StoreHeader />
-
       <main style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 32px 64px' }}>
         {/* Hero */}
         <div style={{
@@ -149,7 +145,6 @@ export default async function MinhaContaPage() {
         </div>
       </main>
 
-      <StoreFooter />
     </div>
   )
 }

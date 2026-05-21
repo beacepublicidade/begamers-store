@@ -127,6 +127,7 @@ export default function ProductForm({ categories, product }: ProductFormProps) {
       stock: parseInt(form.stock),
       weight: form.weight ? parseFloat(form.weight) : null,
       installments: parseInt(form.installments),
+      category_id: form.category_id || null,
       tags,
       images,
       variants,

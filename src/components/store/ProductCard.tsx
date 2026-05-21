@@ -7,6 +7,7 @@ import Stars from '@/components/ui/Stars'
 import Price from '@/components/ui/Price'
 import Icon from '@/components/ui/Icon'
 import { useCart } from '@/lib/hooks/useCart'
+import { useWishlist } from '@/lib/hooks/useWishlist'
 
 export interface ProductCardData {
   id: string
@@ -38,6 +39,8 @@ function getTone(tag: string) {
 export default function ProductCard({ product: p, layout = 'grid', size = 'md' }: ProductCardProps) {
   const isList = layout === 'list'
   const { addItem } = useCart()
+  const { toggle: wishToggle, has: wishHas } = useWishlist()
+  const wished = wishHas(p.id)
 
   return (
     <article style={{
@@ -88,16 +91,18 @@ export default function ProductCard({ product: p, layout = 'grid', size = 'md' }
           ))}
         </div>
         <button
+          title={wished ? 'Remover da lista' : 'Salvar na lista'}
           style={{
             position: 'absolute', top: 10, right: 10,
             width: 32, height: 32,
-            background: 'rgba(0,0,0,0.7)',
-            border: '1px solid var(--hair-strong)',
+            background: wished ? 'rgba(220,30,30,0.85)' : 'rgba(0,0,0,0.7)',
+            border: `1px solid ${wished ? '#f87171' : 'var(--hair-strong)'}`,
             borderRadius: 2,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: '#fff', cursor: 'pointer',
+            transition: 'background 150ms, border 150ms',
           }}
-          onClick={e => { e.preventDefault(); e.stopPropagation() }}
+          onClick={e => { e.preventDefault(); e.stopPropagation(); wishToggle(p.id) }}
         >
           <Icon name="heart" size={16} />
         </button>

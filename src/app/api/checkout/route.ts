@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { hasTransparentCredentials, createPixTransaction, createCardTransaction } from '@/lib/infinitepay'
+import { sendOrderConfirmationEmail } from '@/lib/email'
 
 async function upsertCustomer(supabase: any, customer: any): Promise<string | null> {
   if (!customer.email) return null
@@ -72,6 +73,17 @@ export async function POST(req: Request) {
 
     const customerId = await upsertCustomer(supabase, customer)
     const order = await createOrder(supabase, customerId, body)
+
+    // fire-and-forget — never blocks checkout
+    sendOrderConfirmationEmail({
+      orderNumber: order.order_number,
+      customerName: customer.name,
+      customerEmail: customer.email,
+      total: body.total,
+      items: body.items,
+      paymentMethod: payment_method,
+      shippingMethod: body.shipping_method,
+    }).catch(() => null)
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://begamerstore.com.br'
     const webhookUrl = `${baseUrl}/api/pagamento/webhook`

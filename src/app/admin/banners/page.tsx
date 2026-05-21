@@ -1,7 +1,32 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import AdminTopbar from '@/components/admin/AdminTopbar'
 import Btn from '@/components/ui/Btn'
+
+function UploadBtn({ onUrl }: { onUrl: (url: string) => void }) {
+  const ref = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  async function handle(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]; if (!file) return
+    setUploading(true)
+    const fd = new FormData(); fd.append('file', file)
+    const res = await fetch('/api/admin/upload', { method: 'POST', body: fd })
+    setUploading(false)
+    if (res.ok) { const d = await res.json(); onUrl(d.url ?? d.publicUrl ?? '') }
+    else alert('Erro no upload. Verifique o Storage do Supabase.')
+    if (ref.current) ref.current.value = ''
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => ref.current?.click()}
+      disabled={uploading}
+      style={{ padding: '10px 16px', background: uploading ? 'var(--surf-3)' : 'var(--bg-accent)', border: '1px solid var(--hair-strong)', color: '#fff', fontSize: 11, fontFamily: 'var(--font-display-heavy)', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: uploading ? 'wait' : 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+      {uploading ? '⏳ Enviando...' : '↑ Enviar imagem'}
+      <input ref={ref} type="file" accept="image/*" style={{ display: 'none' }} onChange={handle} />
+    </button>
+  )
+}
 
 const FIELDS = [
   { key: 'banner_badge',       label: 'Badge (ex: ● LIVE — PRÉ-VENDA)',        type: 'text' },
@@ -30,10 +55,11 @@ export default function BannersPage() {
       .then(r => r.json())
       .then((data: Array<{ key: string; value: string }>) => {
         const map: Record<string, string> = {}
-        data.forEach(s => { map[s.key] = s.value })
+        if (Array.isArray(data)) data.forEach(s => { map[s.key] = s.value })
         setValues(map)
         setLoading(false)
       })
+      .catch(() => setLoading(false))
   }, [])
 
   async function save() {
@@ -105,13 +131,29 @@ export default function BannersPage() {
                 <label style={{ display: 'block', fontSize: 10, fontFamily: 'var(--font-display-heavy)', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--fg3)', marginBottom: 6 }}>
                   {f.label}
                 </label>
-                <input
-                  type={f.type}
-                  style={inputStyle}
-                  value={values[f.key] ?? ''}
-                  onChange={e => setValues(v => ({ ...v, [f.key]: e.target.value }))}
-                  placeholder={f.label}
-                />
+                {f.key === 'banner_image_url' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ background: 'rgba(255,193,64,0.06)', border: '1px solid rgba(255,193,64,0.2)', padding: '12px 16px', fontSize: 12, color: 'var(--fg2)', lineHeight: 1.6 }}>
+                      <strong style={{ color: '#ffc940', display: 'block', marginBottom: 6 }}>Como adicionar a imagem do produto:</strong>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <span>① Clique em <strong style={{ color: '#fff' }}>↑ Enviar imagem</strong> e escolha o arquivo no seu computador</span>
+                        <span>② A URL é gerada automaticamente e já aparece no campo acima</span>
+                        <span>③ Clique em <strong style={{ color: '#fff' }}>Salvar Banner</strong> para aplicar no site</span>
+                        <span style={{ marginTop: 4, fontSize: 11, color: 'var(--fg3)' }}>Ou cole uma URL externa diretamente no campo. Recomendado: PNG/WebP com fundo transparente, mín. 800×600px.</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input type="text" style={{ ...inputStyle, flex: 1 }} value={values[f.key] ?? ''} onChange={e => setValues(v => ({ ...v, [f.key]: e.target.value }))} placeholder="A URL aparece aqui automaticamente após o upload" />
+                      <UploadBtn onUrl={url => setValues(v => ({ ...v, banner_image_url: url }))} />
+                    </div>
+                    {values.banner_image_url && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={values.banner_image_url} alt="preview" style={{ maxHeight: 120, maxWidth: 240, objectFit: 'contain', border: '1px solid var(--hair)', background: '#111' }} />
+                    )}
+                  </div>
+                ) : (
+                  <input type={f.type} style={inputStyle} value={values[f.key] ?? ''} onChange={e => setValues(v => ({ ...v, [f.key]: e.target.value }))} placeholder={f.label} />
+                )}
               </div>
             ))}
           </div>

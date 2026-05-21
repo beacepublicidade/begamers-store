@@ -22,6 +22,7 @@ export default function CategoriasPage() {
   const [form, setForm] = useState({ name: '', slug: '', sort_order: '0' })
   const [editing, setEditing] = useState<Category | null>(null)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   async function load() {
     const res = await fetch('/api/admin/categorias')
@@ -34,11 +35,19 @@ export default function CategoriasPage() {
 
   async function save() {
     setSaving(true)
+    setSaveError('')
     const payload = { name: form.name, slug: form.slug || slugify(form.name), sort_order: parseInt(form.sort_order), is_active: true }
+    let res: Response
     if (editing) {
-      await fetch(`/api/admin/categorias/${editing.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      res = await fetch(`/api/admin/categorias/${editing.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     } else {
-      await fetch('/api/admin/categorias', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      res = await fetch('/api/admin/categorias', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    }
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      setSaveError(json.error ?? `Erro ${res.status}`)
+      setSaving(false)
+      return
     }
     setForm({ name: '', slug: '', sort_order: '0' })
     setEditing(null)
@@ -80,6 +89,11 @@ export default function CategoriasPage() {
         <h3 style={{ margin: '0 0 16px', fontFamily: 'var(--font-display-heavy)', fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
           {editing ? 'Editar Categoria' : 'Nova Categoria'}
         </h3>
+        {saveError && (
+          <div style={{ background: '#1a0808', border: '1px solid #3a1a1a', color: '#f87171', padding: '10px 14px', fontSize: 12, marginBottom: 12 }}>
+            Erro: {saveError}
+          </div>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px auto', gap: 12, alignItems: 'end' }}>
           <div>
             <label style={{ display: 'block', fontSize: 10, fontFamily: 'var(--font-display-heavy)', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--fg3)', marginBottom: 6 }}>Nome</label>

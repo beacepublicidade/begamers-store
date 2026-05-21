@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient as createClient } from '@/lib/supabase/server'
 import ProductForm from '@/components/admin/ProductForm'
 import Link from 'next/link'
 import Icon from '@/components/ui/Icon'

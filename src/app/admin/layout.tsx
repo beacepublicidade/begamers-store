@@ -8,20 +8,42 @@ const W = 240
 
 const NAV = [
   { sec: 'VISÃO', items: [
-    { href: '/admin', label: 'Dashboard', icon: 'grid', exact: true },
+    { href: '/admin',            label: 'Dashboard',  icon: 'grid',      exact: true },
   ]},
   { sec: 'VENDAS', items: [
-    { href: '/admin/pedidos', label: 'Pedidos', icon: 'pkg' },
-    { href: '/admin/clientes', label: 'Clientes', icon: 'user' },
-    { href: '/admin/cupons', label: 'Cupons', icon: 'fire' },
+    { href: '/admin/pedidos',    label: 'Pedidos',    icon: 'pkg' },
+    { href: '/admin/carrinhos',  label: 'Carrinhos',  icon: 'cart' },
+    { href: '/admin/clientes',   label: 'Clientes',   icon: 'user' },
+    { href: '/admin/cupons',     label: 'Cupons',     icon: 'fire' },
   ]},
   { sec: 'CATÁLOGO', items: [
-    { href: '/admin/produtos', label: 'Produtos', icon: 'rows' },
+    { href: '/admin/produtos',   label: 'Produtos',   icon: 'rows' },
     { href: '/admin/categorias', label: 'Categorias', icon: 'menu' },
+    { href: '/admin/estoque',    label: 'Estoque',    icon: 'pkg' },
+  ]},
+  { sec: 'FINANCEIRO', items: [
+    { href: '/admin/financeiro',           label: 'Financeiro',    icon: 'bolt' },
+    { href: '/admin/financeiro/recebiveis',label: 'Recebíveis',    icon: 'chart' },
+    { href: '/admin/financeiro/taxas',     label: 'Taxas & limites',icon: 'shield' },
+    { href: '/admin/financeiro/saques',    label: 'Saques',        icon: 'save' },
+  ]},
+  { sec: 'OPERAÇÃO', items: [
+    { href: '/admin/envios',       label: 'Envios & logística', icon: 'truck' },
+    { href: '/admin/rastreamentos',label: 'Rastreamentos',      icon: 'search' },
+    { href: '/admin/avaliacoes',   label: 'Avaliações',         icon: 'star' },
+    { href: '/admin/suporte',      label: 'Inbox Suporte',      icon: 'headset' },
+  ]},
+  { sec: 'MARKETING', items: [
+    { href: '/admin/aparencia',  label: 'Aparência',   icon: 'eye' },
+    { href: '/admin/campanhas',  label: 'Campanhas',   icon: 'bolt' },
+    { href: '/admin/emails',     label: 'E-mails & SMS',icon: 'headset' },
+    { href: '/admin/seo',        label: 'SEO',         icon: 'search' },
   ]},
   { sec: 'CONFIG', items: [
-    { href: '/admin/banners',       label: 'Banners',  icon: 'bolt' },
-    { href: '/admin/configuracoes', label: 'Loja',     icon: 'shield' },
+    { href: '/admin/banners',       label: 'Banners',            icon: 'monitor' },
+    { href: '/admin/configuracoes', label: 'Loja',               icon: 'settings' },
+    { href: '/admin/equipe',        label: 'Equipe & permissões',icon: 'users' },
+    { href: '/admin/integracoes',   label: 'Integrações',        icon: 'refresh' },
   ]},
 ]
 

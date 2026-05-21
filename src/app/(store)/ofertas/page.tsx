@@ -1,9 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient as createClient } from '@/lib/supabase/server'
+
+export const dynamic = 'force-dynamic'
 import ProductCard from '@/components/store/ProductCard'
 import Icon from '@/components/ui/Icon'
 import Link from 'next/link'
-import StoreHeader from '@/components/store/StoreHeader'
-import StoreFooter from '@/components/store/StoreFooter'
 
 function toCard(p: any) {
   const img = p.product_images?.find((i: any) => i.is_primary)?.url ?? p.product_images?.[0]?.url ?? null
@@ -60,8 +60,6 @@ export default async function OfertasPage({ searchParams }: PageProps) {
 
   return (
     <div style={{ background: '#000', color: '#fff', minHeight: '100vh' }}>
-      <StoreHeader activeCategory="OFERTAS" />
-
       <main style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 32px 80px' }}>
 
         {/* Breadcrumb */}
@@ -174,7 +172,6 @@ export default async function OfertasPage({ searchParams }: PageProps) {
 
       </main>
 
-      <StoreFooter />
     </div>
   )
 }

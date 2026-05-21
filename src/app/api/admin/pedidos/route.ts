@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient as createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET(req: Request) {
@@ -11,8 +11,9 @@ export async function GET(req: Request) {
     .from('orders')
     .select(`
       id, order_number, status, total, payment_method, payment_status,
-      created_at, updated_at,
-      customers(name, email)
+      shipping_method, shipping_cost, created_at, updated_at,
+      customers(name, email),
+      order_items(id)
     `)
     .order('created_at', { ascending: false })
     .limit(100)

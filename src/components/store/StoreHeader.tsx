@@ -4,9 +4,9 @@ import Image from 'next/image'
 import Icon from '@/components/ui/Icon'
 import { useCart } from '@/lib/hooks/useCart'
 import { createClient } from '@/lib/supabase/client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
-const CATEGORIES = ['PERIFÉRICOS', 'STREETWEAR', 'HARDWARE', 'CONSOLE', 'COLECIONÁVEIS', 'GIFT CARDS', 'OFERTAS']
+interface NavCategory { id: string; name: string; slug: string }
 
 const iconBtnStyle: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -25,9 +25,21 @@ function fmt(v: number) {
   return 'R$ ' + v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
 
-export default function StoreHeader({ activeCategory }: { activeCategory?: string }) {
+export default function StoreHeader({ activeCategory, categories = [] }: { activeCategory?: string; categories?: NavCategory[] }) {
   const { totalItems, totalPrice, openCart } = useCart()
   const [userName, setUserName] = useState<string | null>(null)
+  const [catMenuOpen, setCatMenuOpen] = useState(false)
+  const catMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (catMenuRef.current && !catMenuRef.current.contains(e.target as Node)) {
+        setCatMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   useEffect(() => {
     const supabase = createClient()
@@ -106,10 +118,10 @@ export default function StoreHeader({ activeCategory }: { activeCategory?: strin
               <span style={{ fontSize: 11, fontWeight: 600 }}>Entrar</span>
             </Link>
           )}
-          <button style={iconBtnStyle}>
+          <Link href="/conta/lista" style={iconBtnStyle}>
             <Icon name="heart" size={20} />
             <span style={{ fontSize: 11, fontWeight: 600 }}>Lista</span>
-          </button>
+          </Link>
           <button
             onClick={openCart}
             style={{ ...iconBtnStyle, background: 'var(--bg-accent)', padding: '10px 16px', clipPath: 'polygon(0 0, 100% 0, 96% 100%, 4% 100%)' }}
@@ -129,28 +141,98 @@ export default function StoreHeader({ activeCategory }: { activeCategory?: strin
           maxWidth: 1280, margin: '0 auto', padding: '0 32px',
           display: 'flex', alignItems: 'center', gap: 28, height: 48,
         }}>
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            fontFamily: 'var(--font-display-heavy)', fontSize: 12,
-            letterSpacing: '0.1em', textTransform: 'uppercase', color: '#fff',
-            paddingRight: 24, borderRight: '1px solid var(--hair-strong)',
-            height: '100%',
-          }}>
-            <Icon name="menu" size={16} /> TODAS CATEGORIAS
-          </span>
-          {CATEGORIES.map(c => (
-            <Link key={c} href={`/produtos?categoria=${c.toLowerCase()}`} style={{
+          <div ref={catMenuRef} style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center' }}>
+            <button
+              onClick={() => setCatMenuOpen(v => !v)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                fontFamily: 'var(--font-display-heavy)', fontSize: 12,
+                letterSpacing: '0.1em', textTransform: 'uppercase', color: '#fff',
+                paddingRight: 24, borderRight: '1px solid var(--hair-strong)',
+                height: '100%', background: 'transparent', border: 'none',
+                cursor: 'pointer', whiteSpace: 'nowrap',
+              }}
+            >
+              <Icon name="menu" size={16} /> TODAS CATEGORIAS
+            </button>
+            {catMenuOpen && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, zIndex: 999,
+                background: '#0a0a0a', border: '1px solid var(--hair-strong)',
+                minWidth: 220, boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+              }}>
+                <Link
+                  href="/produtos"
+                  onClick={() => setCatMenuOpen(false)}
+                  style={{
+                    display: 'block', padding: '12px 20px',
+                    fontFamily: 'var(--font-display-heavy)', fontSize: 12,
+                    letterSpacing: '0.1em', textTransform: 'uppercase',
+                    color: 'var(--fg2)', textDecoration: 'none',
+                    borderBottom: '1px solid var(--hair)',
+                  }}
+                >
+                  Todos os produtos
+                </Link>
+                {categories.map(c => (
+                  <Link
+                    key={c.id}
+                    href={`/produtos?cat=${c.id}`}
+                    onClick={() => setCatMenuOpen(false)}
+                    style={{
+                      display: 'block', padding: '12px 20px',
+                      fontFamily: 'var(--font-display-heavy)', fontSize: 12,
+                      letterSpacing: '0.1em', textTransform: 'uppercase',
+                      color: '#fff', textDecoration: 'none',
+                      borderBottom: '1px solid var(--hair)',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--surf-2)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    {c.name}
+                  </Link>
+                ))}
+                <Link
+                  href="/ofertas"
+                  onClick={() => setCatMenuOpen(false)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px',
+                    fontFamily: 'var(--font-display-heavy)', fontSize: 12,
+                    letterSpacing: '0.1em', textTransform: 'uppercase',
+                    color: 'var(--bg-accent-hot)', textDecoration: 'none',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--surf-2)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <span className="live-dot" /> OFERTAS
+                </Link>
+              </div>
+            )}
+          </div>
+          {categories.map(c => (
+            <Link key={c.id} href={`/produtos?cat=${c.id}`} style={{
               fontFamily: 'var(--font-display-heavy)', fontSize: 12,
               letterSpacing: '0.1em', textTransform: 'uppercase',
-              color: c === 'OFERTAS' ? 'var(--bg-accent-hot)' : (activeCategory === c ? '#fff' : 'var(--fg2)'),
-              borderBottom: activeCategory === c ? '2px solid var(--bg-accent)' : '2px solid transparent',
+              color: activeCategory === c.id ? '#fff' : 'var(--fg2)',
+              borderBottom: activeCategory === c.id ? '2px solid var(--bg-accent)' : '2px solid transparent',
               padding: '16px 0',
               display: 'inline-flex', alignItems: 'center', gap: 6,
+              textDecoration: 'none',
             }}>
-              {c === 'OFERTAS' && <span className="live-dot" />}
-              {c}
+              {c.name}
             </Link>
           ))}
+          <Link href="/ofertas" style={{
+            fontFamily: 'var(--font-display-heavy)', fontSize: 12,
+            letterSpacing: '0.1em', textTransform: 'uppercase',
+            color: 'var(--bg-accent-hot)',
+            borderBottom: '2px solid transparent',
+            padding: '16px 0',
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            textDecoration: 'none',
+          }}>
+            <span className="live-dot" /> OFERTAS
+          </Link>
         </div>
       </nav>
     </header>
