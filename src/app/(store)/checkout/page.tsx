@@ -204,7 +204,7 @@ export default function CheckoutPage() {
           customer,
           address,
           items: items.map(i => ({ product_id: i.id, quantity: i.quantity, price: i.price, product_name: i.name })),
-          shipping_method: shipping,
+          shipping_method: selectedShipping?.name ?? '',
           shipping_cost: shippingCost,
           payment_method: payment,
           coupon_code: couponCode || null,
