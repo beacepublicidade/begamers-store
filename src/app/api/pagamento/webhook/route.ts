@@ -16,7 +16,7 @@ export async function POST(req: Request) {
         const supabase = createAdminClient()
         await supabase
           .from('orders')
-          .update({ payment_status: 'paid', status: 'confirmed' } as never)
+          .update({ payment_status: 'paid' } as never)
           .eq('id', orderId)
       }
 
