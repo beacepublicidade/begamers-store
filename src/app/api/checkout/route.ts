@@ -34,7 +34,6 @@ async function createOrder(supabase: any, customerId: string | null, body: any) 
       subtotal,
       discount: discount ?? 0,
       total,
-      coupon_code: coupon_code ?? null,
     } as never)
     .select('id, order_number')
     .single() as unknown as { data: { id: string; order_number: string } | null; error: any }
