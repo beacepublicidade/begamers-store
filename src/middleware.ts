@@ -35,7 +35,16 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const protectedPaths = ['/checkout', '/conta/minha-conta', '/conta/pedidos', '/conta/enderecos', '/conta/dados-pessoais', '/conta/senha', '/conta/cupons']
+  const isProtected = protectedPaths.some(p => pathname.startsWith(p))
+
+  if (isProtected && !user) {
+    const loginUrl = new URL('/conta/login', request.url)
+    loginUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(loginUrl)
+  }
 
   return response
 }
