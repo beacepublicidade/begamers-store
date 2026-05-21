@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import Icon from '@/components/ui/Icon'
 
-type Step = 'identificacao' | 'endereco' | 'frete' | 'pagamento' | 'confirmacao'
+type Step = 'identificacao' | 'endereco' | 'frete' | 'revisao' | 'pagamento' | 'confirmacao'
 type PayMethod = 'pix' | 'credit' | 'boleto'
 type ShippingOption = { id: number; name: string; company: string; price: number; delivery_time: number }
 
@@ -13,8 +13,8 @@ const STEPS: { id: Step; label: string }[] = [
   { id: 'identificacao', label: 'IDENTIFICAÇÃO' },
   { id: 'endereco',      label: 'ENDEREÇO' },
   { id: 'frete',         label: 'ENTREGA' },
+  { id: 'revisao',       label: 'REVISÃO' },
   { id: 'pagamento',     label: 'PAGAMENTO' },
-  { id: 'confirmacao',   label: 'REVISÃO' },
 ]
 
 function fmt(v: number) {
@@ -110,6 +110,10 @@ export default function CheckoutPage() {
   const [cardData, setCardData] = useState({ number: '', holder: '', expMonth: '', expYear: '', cvv: '' })
   const [showCardForm, setShowCardForm] = useState(false)
 
+  // BG Coins
+  const [coinsBalance, setCoinsBalance] = useState(0)
+  const [coinsToUse, setCoinsToUse] = useState(0)
+
   // PIX QR state
   const [pixQR, setPixQR] = useState<{ br_code: string; orderId: string; orderNumber: string } | null>(null)
   const [pixPaid, setPixPaid] = useState(false)
@@ -120,7 +124,8 @@ export default function CheckoutPage() {
 
   const selectedShipping = shippingOptions.find(s => s.id === selectedShippingId)
   const shippingCost = freeShipping ? 0 : (selectedShipping?.price ?? 0)
-  const orderTotal = total - discount + shippingCost
+  const coinsDiscount = Math.round((coinsToUse / 100) * 5 * 100) / 100
+  const orderTotal = total - discount - coinsDiscount + shippingCost
   const pixPrice = Math.max(0.01, Math.round(orderTotal * 0.9 * 100) / 100)
 
   const currentIdx = STEPS.findIndex(s => s.id === step)
@@ -137,8 +142,30 @@ export default function CheckoutPage() {
     document.head.appendChild(s)
   }, [])
 
+  // Prefill from logged-in user
+  useEffect(() => {
+    fetch('/api/conta/me')
+      .then(r => r.json())
+      .then(data => {
+        if (!data) return
+        setCustomer(c => ({
+          name:  data.name  || c.name,
+          email: data.email || c.email,
+          cpf:   data.cpf   || c.cpf,
+          phone: data.phone || c.phone,
+        }))
+      })
+      .catch(() => {})
+  }, [])
+
   // Stop polling on unmount
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
+
+  // Fetch BG Coins when entering pagamento step
+  useEffect(() => {
+    if (step !== 'pagamento') return
+    fetch('/api/conta/coins').then(r => r.json()).then(d => setCoinsBalance(d.coins ?? 0)).catch(() => {})
+  }, [step])
 
   function startPixPolling(orderId: string, orderNumber: string) {
     if (pollRef.current) clearInterval(pollRef.current)
@@ -150,7 +177,7 @@ export default function CheckoutPage() {
           clearInterval(pollRef.current!)
           setPixPaid(true)
           clearCart?.()
-          setTimeout(() => { window.location.href = '/pedido/' + orderNumber }, 1500)
+          setTimeout(() => { window.location.href = '/conta/pedidos/' + orderId }, 1500)
         }
       } catch { /* ignore */ }
     }, 3000)
@@ -204,10 +231,13 @@ export default function CheckoutPage() {
           address,
           items: items.map(i => ({ product_id: i.id, quantity: i.quantity, price: i.price, product_name: i.name })),
           shipping_method: selectedShipping?.name ?? '',
+          shipping_service_id: selectedShipping?.id ?? null,
+          shipping_carrier: selectedShipping?.company ?? null,
           shipping_cost: shippingCost,
           payment_method: payment,
           coupon_code: couponCode || null,
           discount,
+          coins_redeemed: coinsToUse,
           subtotal: total,
           total: finalAmount,
           card_token: cardToken,
@@ -231,7 +261,7 @@ export default function CheckoutPage() {
 
       // Card approved or confirmed
       clearCart?.()
-      window.location.href = '/pedido/' + data.order_number
+      window.location.href = '/conta/pedidos/' + (data.order_id ?? data.order_number)
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -632,7 +662,7 @@ export default function CheckoutPage() {
                       )}
 
                       {/* Cupom */}
-                      <div style={{ marginBottom: 20, padding: 16, border: '1px solid var(--hair)', background: 'var(--surf-1)' }}>
+                      <div style={{ marginBottom: 12, padding: 16, border: '1px solid var(--hair)', background: 'var(--surf-1)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                           <span style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 12, letterSpacing: '0.1em' }}>CUPOM DE DESCONTO</span>
                           <Icon name="bolt" size={14} color="var(--bg-accent-hot)" />
@@ -648,6 +678,46 @@ export default function CheckoutPage() {
                         )}
                       </div>
 
+                      {/* BG Coins */}
+                      {coinsBalance >= 100 && !couponApplied && (
+                        <div style={{ marginBottom: 20, padding: 16, border: `1px solid ${coinsToUse > 0 ? 'rgba(255,31,61,0.4)' : 'var(--hair)'}`, background: coinsToUse > 0 ? 'rgba(255,31,61,0.06)' : 'var(--surf-1)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <Icon name="bolt" size={16} color="var(--bg-accent-hot)" />
+                              <div>
+                                <div style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 12, letterSpacing: '0.1em' }}>BG COINS</div>
+                                <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 2 }}>
+                                  Saldo: <span style={{ color: 'var(--bg-accent-hot)' }}>{coinsBalance} coins</span> = até {fmt(Math.min(coinsBalance / 100 * 5, orderTotal * 0.1))} OFF
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => setCoinsToUse(prev => {
+                                if (prev > 0) return 0
+                                const maxByBalance = Math.floor(coinsBalance / 100) * 100
+                                const maxByOrder = Math.floor((orderTotal * 0.1) / 5) * 100
+                                return Math.min(maxByBalance, maxByOrder)
+                              })}
+                              style={{
+                                padding: '8px 16px', cursor: 'pointer',
+                                background: coinsToUse > 0 ? 'var(--bg-accent)' : 'transparent',
+                                border: `1px solid ${coinsToUse > 0 ? 'var(--bg-accent)' : 'var(--hair-strong)'}`,
+                                color: coinsToUse > 0 ? '#fff' : 'var(--fg2)',
+                                fontFamily: 'var(--font-display-heavy)', fontSize: 10,
+                                letterSpacing: '0.08em', textTransform: 'uppercase',
+                              }}
+                            >
+                              {coinsToUse > 0 ? 'Remover' : 'Usar coins'}
+                            </button>
+                          </div>
+                          {coinsToUse > 0 && (
+                            <div style={{ marginTop: 10, padding: '8px 12px', background: 'rgba(255,31,61,0.08)', border: '1px solid rgba(255,31,61,0.3)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--bg-accent-hot)' }}>
+                              <Icon name="check" size={12} stroke={2.5} /> {coinsToUse} BG Coins aplicados · −{fmt(coinsDiscount)}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {error && (
                         <div style={{ marginBottom: 14, padding: '10px 14px', background: 'rgba(255,31,61,0.1)', border: '1px solid var(--bg-accent-hot)', fontSize: 13, color: '#ff6b6b' }}>
                           {error}
@@ -655,7 +725,7 @@ export default function CheckoutPage() {
                       )}
 
                       <div style={{ display: 'flex', gap: 10 }}>
-                        <button onClick={() => setStep('frete')} style={BACK_BTN}>← Voltar</button>
+                        <button onClick={() => setStep('revisao')} style={BACK_BTN}>← Voltar</button>
                         <button
                           onClick={() => {
                             if (payment === 'credit') {
@@ -680,7 +750,66 @@ export default function CheckoutPage() {
               )}
             </CheckoutSection>
 
-            <CheckoutSection title="Revisão do pedido" pending={isPending('confirmacao')} />
+            {/* Revisão */}
+            <CheckoutSection title="Revisão do Pedido" done={isDone('revisao')} active={isActive('revisao')} pending={isPending('revisao')}>
+              {isActive('revisao') && (
+                <div>
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--fg3)', marginBottom: 8 }}>// ITENS</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {items.map(item => (
+                        <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--surf-1)', border: '1px solid var(--hair)', fontSize: 13 }}>
+                          <span style={{ color: 'var(--fg2)' }}>{item.name} <span style={{ color: 'var(--fg3)' }}>× {item.quantity}</span></span>
+                          <span style={{ fontFamily: 'var(--font-display-heavy)' }}>{fmt(item.price * item.quantity)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: 14, padding: '12px 14px', background: 'var(--surf-1)', border: '1px solid var(--hair)' }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--fg3)', marginBottom: 6 }}>// ENDEREÇO</div>
+                    <div style={{ fontSize: 13, color: 'var(--fg2)', lineHeight: 1.7 }}>
+                      {address.street}, {address.number}{address.complement ? `, ${address.complement}` : ''}<br />
+                      {address.neighborhood} — {address.city}/{address.state} · CEP {address.zip}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: 14, padding: '12px 14px', background: 'var(--surf-1)', border: '1px solid var(--hair)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--fg3)', marginBottom: 4 }}>// ENTREGA</div>
+                      <div style={{ fontSize: 13, color: 'var(--fg2)' }}>{freeShipping ? 'Frete Grátis' : (selectedShipping?.name ?? '—')}</div>
+                      {selectedShipping && !freeShipping && <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 2 }}>{selectedShipping.delivery_time} dias úteis</div>}
+                    </div>
+                    <span style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 14, color: freeShipping ? '#4cd680' : '#fff' }}>
+                      {freeShipping ? 'GRÁTIS' : fmt(shippingCost)}
+                    </span>
+                  </div>
+                  <div style={{ padding: '14px', border: '1px solid var(--hair-strong)', marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--fg2)' }}>Subtotal</span><span>{fmt(total)}</span>
+                    </div>
+                    {discount > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--fg2)' }}>Desconto</span>
+                        <span style={{ color: '#4cd680' }}>−{fmt(discount)}</span>
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--hair)', paddingTop: 10, marginTop: 4 }}>
+                      <span style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 15, textTransform: 'uppercase' }}>Total</span>
+                      <span style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 20 }}>{fmt(orderTotal)}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button onClick={() => setStep('frete')} style={BACK_BTN}>← Voltar</button>
+                    <button onClick={next} style={{ ...CONTINUE_BTN, flex: 1, padding: '16px' }}>Escolher Pagamento →</button>
+                  </div>
+                </div>
+              )}
+              {isDone('revisao') && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, color: 'var(--fg2)' }}>
+                  <span>{items.length} {items.length === 1 ? 'item' : 'itens'} · {fmt(orderTotal)}</span>
+                  <button onClick={() => setStep('revisao')} style={{ background: 'none', border: 0, color: 'var(--fg2)', cursor: 'pointer', fontSize: 11, textDecoration: 'underline' }}>Ver</button>
+                </div>
+              )}
+            </CheckoutSection>
           </div>
 
           {/* Summary sidebar */}

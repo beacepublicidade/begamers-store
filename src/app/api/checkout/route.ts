@@ -1,26 +1,19 @@
-import { createAdminClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { sendOrderConfirmationEmail } from '@/lib/email'
 import { createMPPixPayment, createMPCardPayment } from '@/lib/mercadopago'
 
-async function upsertCustomer(supabase: any, customer: any): Promise<string | null> {
-  if (!customer.email) return null
-  const { data: existing } = await supabase
-    .from('customers')
-    .select('id')
-    .eq('email', customer.email)
-    .single() as unknown as { data: { id: string } | null }
-  if (existing) return existing.id
-  const { data: created } = await supabase
-    .from('customers')
-    .insert({ name: customer.name, email: customer.email, phone: customer.phone ?? null } as never)
-    .select('id')
-    .single() as unknown as { data: { id: string } | null }
-  return created?.id ?? null
+async function upsertCustomer(supabase: any, userId: string, customer: any): Promise<void> {
+  await supabase.from('customers').upsert({
+    id: userId,
+    full_name: customer.name ?? null,
+    phone: customer.phone ?? null,
+    cpf: customer.cpf ?? null,
+  } as never, { onConflict: 'id' })
 }
 
 async function createOrder(supabase: any, customerId: string | null, body: any) {
-  const { items, shipping_cost, payment_method, coupon_code, discount, subtotal, total } = body
+  const { items, shipping_cost, payment_method, coupon_code, discount, subtotal, total, coins_redeemed, shipping_service_id, shipping_carrier, address } = body
   const { data: order, error } = await supabase
     .from('orders')
     .insert({
@@ -32,6 +25,10 @@ async function createOrder(supabase: any, customerId: string | null, body: any) 
       discount: discount ?? 0,
       shipping: shipping_cost ?? 0,
       total,
+      coins_redeemed: coins_redeemed ?? 0,
+      shipping_service_id: shipping_service_id ?? null,
+      shipping_carrier: shipping_carrier ?? null,
+      delivery_address: address ?? null,
     } as never)
     .select('id, order_number')
     .single() as unknown as { data: { id: string; order_number: string } | null; error: any }
@@ -65,11 +62,28 @@ async function createOrder(supabase: any, customerId: string | null, body: any) 
 
 export async function POST(req: Request) {
   try {
+    const authClient = createClient()
+    const { data: { user } } = await authClient.auth.getUser()
     const supabase = createAdminClient()
     const body = await req.json()
     const { customer, payment_method, card_token, card_payment_method_id, installments } = body
 
-    const customerId = await upsertCustomer(supabase, customer)
+    const customerId = user?.id ?? null
+    if (customerId) await upsertCustomer(supabase, customerId, customer)
+
+    // Validate coins if being redeemed
+    const coinsRedeemed: number = body.coins_redeemed ?? 0
+    if (coinsRedeemed > 0 && customerId) {
+      const { data: cust } = await supabase
+        .from('customers').select('bg_coins').eq('id', customerId).maybeSingle() as unknown as { data: { bg_coins: number } | null }
+      const balance = cust?.bg_coins ?? 0
+      const maxAllowed = Math.floor((body.total / 5) * 100 / 100) * 100 // 10% of total in blocks of 100... simplified
+      const coinsDiscount = (coinsRedeemed / 100) * 5
+      if (coinsRedeemed > balance) throw new Error('Coins insuficientes')
+      if (coinsRedeemed % 100 !== 0) throw new Error('Coins devem ser múltiplos de 100')
+      if (coinsDiscount > body.total * 0.1) throw new Error('Desconto excede 10% do pedido')
+    }
+
     const order = await createOrder(supabase, customerId, body)
 
     sendOrderConfirmationEmail({

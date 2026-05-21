@@ -14,7 +14,7 @@ export async function signUpAction(email: string, password: string, name: string
   if (error) return { error: error.message }
   if (data.user) {
     const admin = createAdminClient()
-    await admin.from('customers').upsert({ email, name } as never, { onConflict: 'email' })
+    await admin.from('customers').upsert({ id: data.user.id, full_name: name } as never, { onConflict: 'id' })
   }
   return { success: true }
 }

@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import Icon from '@/components/ui/Icon'
@@ -6,7 +6,7 @@ import Icon from '@/components/ui/Icon'
 interface PageProps { params: { id: string } }
 
 function fmt(v: number) {
-  return (v / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 const STATUS: Record<string, { l: string; c: string; bg: string; step: number }> = {
@@ -25,15 +25,12 @@ export default async function PedidoClientePage({ params }: PageProps) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/conta/login?redirect=/conta/pedidos/' + params.id)
 
-  const email = user.email ?? ''
-  const { data: customers } = await supabase.from('customers').select('id').eq('email', email) as unknown as { data: Array<{ id: string }> | null }
-  const customerIds = (customers ?? []).map(c => c.id)
-
-  const { data: order } = await supabase
+  const admin = createAdminClient()
+  const { data: order } = await admin
     .from('orders')
     .select(`*, order_items(*, products(name, slug, product_images(url, is_primary)))`)
     .eq('id', params.id)
-    .in('customer_id', customerIds)
+    .eq('customer_id', user.id)
     .single() as unknown as { data: any }
 
   if (!order) notFound()
@@ -126,7 +123,7 @@ export default async function PedidoClientePage({ params }: PageProps) {
                       </div>
                     )}
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{item.product_name ?? item.products?.name}</div>
+                      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{item.name ?? item.products?.name}</div>
                       <div style={{ fontSize: 12, color: 'var(--fg3)' }}>Qtd: {item.quantity} × {fmt(item.price)}</div>
                     </div>
                     <div style={{ fontFamily: 'var(--font-display-heavy)', fontSize: 15 }}>{fmt(item.price * item.quantity)}</div>
@@ -160,10 +157,10 @@ export default async function PedidoClientePage({ params }: PageProps) {
                     <span style={{ color: '#4cd680' }}>-{fmt(order.discount)}</span>
                   </div>
                 )}
-                {order.shipping_cost > 0 && (
+                {order.shipping > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--fg2)' }}>Frete</span>
-                    <span>{fmt(order.shipping_cost)}</span>
+                    <span>{fmt(order.shipping)}</span>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--hair)', paddingTop: 12, marginTop: 4 }}>
