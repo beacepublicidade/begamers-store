@@ -1,5 +1,15 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { createHmac } from 'crypto'
+
+async function verifySignature(req: Request, rawBody: string): Promise<boolean> {
+  const secret = process.env.MELHORENVIO_WEBHOOK_SECRET
+  if (!secret) return true // skip if not configured
+  const sig = req.headers.get('x-me-signature') ?? req.headers.get('x-melhorenvio-signature')
+  if (!sig) return false
+  const expected = createHmac('sha256', secret).update(rawBody).digest('hex')
+  return sig === expected || sig === `sha256=${expected}`
+}
 
 const ME_STATUS_MAP: Record<string, string> = {
   released:        'posted',
@@ -13,7 +23,11 @@ const ME_STATUS_MAP: Record<string, string> = {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
+    const rawBody = await req.text()
+    if (!(await verifySignature(req, rawBody))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const body = JSON.parse(rawBody)
     const shipmentId = body?.data?.id ?? body?.id
     if (!shipmentId) return NextResponse.json({ received: true })
 
