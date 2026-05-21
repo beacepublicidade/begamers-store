@@ -149,9 +149,8 @@ export default function CheckoutPage() {
         if (data.paid) {
           clearInterval(pollRef.current!)
           setPixPaid(true)
-          setOrderResult({ orderNumber, email: customer.email })
           clearCart?.()
-          setTimeout(() => setStep('confirmacao'), 1500)
+          setTimeout(() => { window.location.href = '/pedido/' + orderNumber }, 1500)
         }
       } catch { /* ignore */ }
     }, 3000)
@@ -231,9 +230,8 @@ export default function CheckoutPage() {
       }
 
       // Card approved or confirmed
-      setOrderResult({ orderNumber: data.order_number, email: customer.email })
       clearCart?.()
-      setStep('confirmacao')
+      window.location.href = '/pedido/' + data.order_number
     } catch (e: any) {
       setError(e.message)
     } finally {
