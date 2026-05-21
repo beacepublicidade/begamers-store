@@ -40,9 +40,10 @@ async function createOrder(supabase: any, customerId: string | null, body: any) 
   const orderItems = items.map((item: any) => ({
     order_id: order.id,
     product_id: item.product_id,
-    product_name: item.product_name,
+    name: item.product_name,
     quantity: item.quantity,
     price: item.price,
+    total: item.price * item.quantity,
   }))
   const { error: itemsErr } = await supabase.from('order_items').insert(orderItems as never)
   if (itemsErr) throw new Error(itemsErr.message)
