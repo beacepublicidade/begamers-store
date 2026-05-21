@@ -29,7 +29,6 @@ async function createOrder(supabase: any, customerId: string | null, body: any) 
       payment_method,
       payment_status: 'pending',
       shipping_method,
-      shipping_cost,
       subtotal,
       discount: discount ?? 0,
       total,

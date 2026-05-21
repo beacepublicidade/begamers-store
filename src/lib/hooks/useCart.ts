@@ -36,7 +36,7 @@ function saveCart(items: CartItem[]) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)) } catch {}
 }
 
-let globalCart: CartItem[] = loadCart()
+let globalCart: CartItem[] = []
 let globalIsOpen = false
 let listeners: Array<() => void> = []
 
@@ -46,12 +46,18 @@ function notify() {
 }
 
 export function useCart(): CartStore {
-  const [items, setItems] = useState<CartItem[]>(globalCart)
+  const [items, setItems] = useState<CartItem[]>([])
   const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
+    // Load persisted cart only on client after hydration
+    const persisted = loadCart()
+    if (persisted.length > 0 && globalCart.length === 0) {
+      globalCart = persisted
+    }
     const update = () => { setItems([...globalCart]); setIsOpen(globalIsOpen) }
     listeners.push(update)
+    update()
     return () => { listeners = listeners.filter(l => l !== update) }
   }, [])
 
