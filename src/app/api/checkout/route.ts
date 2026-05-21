@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { hasTransparentCredentials, createPixTransaction, createCardTransaction } from '@/lib/infinitepay'
 import { sendOrderConfirmationEmail } from '@/lib/email'
@@ -64,7 +64,7 @@ async function createOrder(supabase: any, customerId: string | null, body: any) 
 
 export async function POST(req: Request) {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     const body = await req.json()
     const { customer, payment_method, total, card_token, installments } = body
 
