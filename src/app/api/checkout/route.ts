@@ -56,8 +56,8 @@ async function createOrder(supabase: any, customerId: string | null, body: any) 
   }
 
   if (coupon_code) {
-    const { data: coup } = await supabase.from('coupons').select('uses_count').eq('code', coupon_code).single() as unknown as { data: { uses_count: number } | null }
-    if (coup) await supabase.from('coupons').update({ uses_count: coup.uses_count + 1 } as never).eq('code', coupon_code)
+    const { data: coup } = await supabase.from('coupons').select('used_count').eq('code', coupon_code).single() as unknown as { data: { used_count: number } | null }
+    if (coup) await supabase.from('coupons').update({ used_count: coup.used_count + 1 } as never).eq('code', coupon_code)
   }
 
   return order

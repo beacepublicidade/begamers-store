@@ -100,6 +100,7 @@ export default function CheckoutPage() {
   const [couponCode, setCouponCode] = useState('')
   const [discount, setDiscount] = useState(0)
   const [couponApplied, setCouponApplied] = useState(false)
+  const [freeShipping, setFreeShipping] = useState(false)
   const [installments, setInstallments] = useState(1)
 
   // Card form
@@ -114,7 +115,7 @@ export default function CheckoutPage() {
   // Order result
   const [orderResult, setOrderResult] = useState<{ orderNumber: string; email: string } | null>(null)
 
-  const shippingCost = shipping === 'pac' ? 15.90 : 29.90
+  const shippingCost = freeShipping ? 0 : shipping === 'pac' ? 15.90 : 29.90
   const orderTotal = total - discount + shippingCost
   const pixPrice = Math.round(orderTotal * 0.9)
 
@@ -161,8 +162,9 @@ export default function CheckoutPage() {
     })
     if (res.ok) {
       const data = await res.json()
-      setDiscount(data.discount)
+      setDiscount(data.discount ?? 0)
       setCouponApplied(true)
+      if (data.free_shipping) setFreeShipping(true)
     }
   }
 

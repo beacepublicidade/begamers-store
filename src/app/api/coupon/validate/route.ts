@@ -18,12 +18,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Cupom expirado' }, { status: 400 })
   }
 
-  if (coupon.max_uses && coupon.uses_count >= coupon.max_uses) {
+  if (coupon.max_uses && coupon.used_count >= coupon.max_uses) {
     return NextResponse.json({ error: 'Cupom esgotado' }, { status: 400 })
   }
 
   if (coupon.min_order && total < coupon.min_order) {
     return NextResponse.json({ error: `Pedido mínimo de R$ ${(coupon.min_order / 100).toFixed(2)}` }, { status: 400 })
+  }
+
+  if (coupon.free_shipping) {
+    return NextResponse.json({ ok: true, discount: 0, free_shipping: true, code: coupon.code })
   }
 
   const discount = coupon.type === 'percent'
