@@ -64,15 +64,18 @@ function ContaLoginInner() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setSuccess('')
     try {
       const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      const { error, data } = await supabase.auth.signInWithPassword({ email, password })
       setLoading(false)
-      if (error) { setError(error.message); return }
+      if (error) { setError('ERRO AUTH: ' + error.message); return }
+      if (!data?.session) { setError('Login ok mas sem sessão — tente novamente'); return }
+      setSuccess('✅ Autenticado! Redirecionando...')
       window.location.href = redirectTo
     } catch (err: any) {
       setLoading(false)
-      setError(err?.message ?? 'Erro ao fazer login')
+      setError('EXCEÇÃO: ' + (err?.message ?? 'desconhecido'))
     }
   }
 
@@ -168,6 +171,7 @@ function ContaLoginInner() {
                 <input className="bg-input" style={INPUT} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
               </div>
               {error && <div style={{ padding: '10px 14px', background: 'rgba(255,31,61,0.1)', border: '1px solid var(--bg-accent-hot)', fontSize: 13, color: '#ff6b6b' }}>{error}</div>}
+              {success && <div style={{ padding: '10px 14px', background: 'rgba(31,157,85,0.1)', border: '1px solid #1f9d55', fontSize: 13, color: '#4cd680' }}>{success}</div>}
               <button type="submit" disabled={loading} style={BTN}>{loading ? 'Entrando...' : 'Entrar no Server'}</button>
             </form>
             <div style={{ marginTop: 20, textAlign: 'center', fontSize: 12, color: 'var(--fg2)' }}>
