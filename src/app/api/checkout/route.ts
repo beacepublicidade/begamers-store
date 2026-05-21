@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { sendOrderConfirmationEmail } from '@/lib/email'
+import { createMPPixPayment, createMPCardPayment } from '@/lib/mercadopago'
 
 async function upsertCustomer(supabase: any, customer: any): Promise<string | null> {
   if (!customer.email) return null
@@ -66,7 +67,7 @@ export async function POST(req: Request) {
   try {
     const supabase = createAdminClient()
     const body = await req.json()
-    const { customer, payment_method } = body
+    const { customer, payment_method, card_token, card_payment_method_id, installments } = body
 
     const customerId = await upsertCustomer(supabase, customer)
     const order = await createOrder(supabase, customerId, body)
@@ -81,44 +82,36 @@ export async function POST(req: Request) {
       shippingMethod: body.shipping_method,
     }).catch(() => null)
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://begamerstore.com.br'
-    const webhookUrl = `${baseUrl}/api/pagamento/webhook`
-    const handle = process.env.INFINITEPAY_HANDLE
-
-    if (!handle) {
-      return NextResponse.json({ error: 'INFINITEPAY_HANDLE env var não configurada' }, { status: 500 })
+    // ── PIX ───────────────────────────────────────────────────────────────────
+    if (payment_method === 'pix') {
+      const { br_code, payment_id } = await createMPPixPayment({
+        amount: body.total,
+        orderId: order.id,
+        customer,
+      })
+      await supabase.from('orders').update({ notes: `mp:${payment_id}` } as never).eq('id', order.id)
+      return NextResponse.json({ ok: true, order_id: order.id, order_number: order.order_number, br_code }, { status: 201 })
     }
 
-    const ipPayload = {
-      handle,
-      redirect_url: `${baseUrl}/checkout/sucesso?order=${order.id}`,
-      webhook_url: webhookUrl,
-      order_nsu: order.id,
-      items: body.items.map((item: any) => ({
-        quantity: item.quantity,
-        price: Math.round(item.price * 100),
-        description: item.product_name,
-      })),
-      customer: { name: customer.name, email: customer.email, phone_number: customer.phone ?? '' },
-      address: {
-        cep: body.address?.zip ?? '',
-        number: body.address?.number ?? '',
-        complement: body.address?.complement ?? '',
-      },
+    // ── Cartão ────────────────────────────────────────────────────────────────
+    if (payment_method === 'credit' && card_token) {
+      const { status, payment_id } = await createMPCardPayment({
+        amount: body.total,
+        orderId: order.id,
+        cardToken: card_token,
+        paymentMethodId: card_payment_method_id ?? 'visa',
+        installments: installments ?? 1,
+        customer,
+      })
+      const paid = ['approved', 'authorized'].includes(status)
+      await supabase.from('orders').update({
+        notes: `mp:${payment_id}`,
+        ...(paid ? { payment_status: 'paid' } : {}),
+      } as never).eq('id', order.id)
+      return NextResponse.json({ ok: true, order_id: order.id, order_number: order.order_number, card_status: status, paid }, { status: 201 })
     }
 
-    const ipRes = await fetch('https://api.checkout.infinitepay.io/links', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(ipPayload),
-    })
-    if (!ipRes.ok) {
-      const errText = await ipRes.text()
-      console.error('[checkout] InfinitePay error:', errText)
-      return NextResponse.json({ error: `InfinitePay error: ${errText}` }, { status: 502 })
-    }
-    const { url: paymentUrl } = await ipRes.json() as { url: string }
-    return NextResponse.json({ ok: true, order_id: order.id, order_number: order.order_number, payment_url: paymentUrl }, { status: 201 })
+    return NextResponse.json({ error: 'Método de pagamento não suportado' }, { status: 400 })
 
   } catch (err: any) {
     console.error('[checkout]', err)

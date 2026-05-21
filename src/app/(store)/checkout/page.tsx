@@ -69,6 +69,15 @@ function CheckoutSection({ title, done, active, pending, children }: {
   )
 }
 
+function detectCardBrand(number: string): string {
+  const n = number.replace(/\s/g, '')
+  if (/^4/.test(n)) return 'visa'
+  if (/^(5[1-5]|2[2-7])/.test(n)) return 'master'
+  if (/^3[47]/.test(n)) return 'amex'
+  if (/^(636368|438935|504175|451416|636297|5067|4576|4011)/.test(n)) return 'elo'
+  return 'visa'
+}
+
 function CardInput({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
   return (
     <div>
@@ -115,6 +124,14 @@ export default function CheckoutPage() {
   function isPending(id: Step) { return currentIdx < STEPS.findIndex(s => s.id === id) }
   function next() { const n = STEPS[currentIdx + 1]; if (n) setStep(n.id) }
 
+  // Load Mercado Pago SDK
+  useEffect(() => {
+    if ((window as any).MercadoPago) return
+    const s = document.createElement('script')
+    s.src = 'https://sdk.mercadopago.com/js/v2'
+    document.head.appendChild(s)
+  }, [])
+
   // Stop polling on unmount
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
 
@@ -149,7 +166,7 @@ export default function CheckoutPage() {
     }
   }
 
-  async function placeOrder(cardToken?: string) {
+  async function placeOrder(cardToken?: string, cardBrand?: string) {
     setLoading(true)
     setError(null)
     const finalAmount = payment === 'pix' ? pixPrice : orderTotal
@@ -169,6 +186,7 @@ export default function CheckoutPage() {
           subtotal: total,
           total: finalAmount,
           card_token: cardToken,
+          card_payment_method_id: cardBrand,
           installments,
         }),
       })
@@ -201,20 +219,20 @@ export default function CheckoutPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/checkout/tokenize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          number: cardData.number.replace(/\s/g, ''),
-          expiration_month: cardData.expMonth.padStart(2, '0'),
-          expiration_year: cardData.expYear.slice(-2),
-          holder_name: cardData.holder.toUpperCase(),
-          cvv: cardData.cvv,
-        }),
+      const MPClass = (window as any).MercadoPago
+      if (!MPClass) throw new Error('SDK de pagamento não carregado. Aguarde e tente novamente.')
+      const mp = new MPClass(process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY, { locale: 'pt-BR' })
+      const result = await mp.createCardToken({
+        cardNumber: cardData.number.replace(/\s/g, ''),
+        cardholderName: cardData.holder.toUpperCase(),
+        cardExpirationMonth: cardData.expMonth.padStart(2, '0'),
+        cardExpirationYear: cardData.expYear.length === 2 ? '20' + cardData.expYear : cardData.expYear,
+        securityCode: cardData.cvv,
+        identificationType: 'CPF',
+        identificationNumber: customer.cpf.replace(/\D/g, ''),
       })
-      const tokenData = await res.json()
-      if (!res.ok) throw new Error(tokenData.error ?? 'Erro ao processar cartão')
-      await placeOrder(tokenData.card_token)
+      if (!result?.id) throw new Error('Falha ao processar dados do cartão')
+      await placeOrder(result.id, detectCardBrand(cardData.number))
     } catch (e: any) {
       setError(e.message)
       setLoading(false)
