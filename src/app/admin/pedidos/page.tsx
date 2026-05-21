@@ -51,7 +51,7 @@ const PM_LABELS: Record<string, string> = {
 }
 
 function fmtPrice(v: number) {
-  return (v / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 function fmtDate(s: string) {
