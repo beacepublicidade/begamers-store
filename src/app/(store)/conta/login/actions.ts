@@ -1,6 +1,5 @@
 'use server'
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 export async function signInAction(email: string, password: string) {
   const supabase = createClient()
@@ -14,7 +13,13 @@ export async function signUpAction(email: string, password: string, name: string
   const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { name } } })
   if (error) return { error: error.message }
   if (data.user) {
-    await supabase.from('customers').upsert({ email, name } as never, { onConflict: 'email' })
+    const admin = createAdminClient()
+    await admin.from('customers').upsert({ email, name } as never, { onConflict: 'email' })
   }
   return { success: true }
+}
+
+export async function signOutAction() {
+  const supabase = createClient()
+  await supabase.auth.signOut()
 }
