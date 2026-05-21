@@ -60,14 +60,17 @@ function ContaLoginInner() {
       .catch(() => null)
   }, [])
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
     setError('')
     setSuccess('')
     try {
+      const fd = new FormData(e.currentTarget)
+      const emailVal = (fd.get('email') as string ?? '').trim()
+      const passwordVal = fd.get('password') as string ?? ''
       const supabase = createClient()
-      const { error, data } = await supabase.auth.signInWithPassword({ email, password })
+      const { error, data } = await supabase.auth.signInWithPassword({ email: emailVal, password: passwordVal })
       setLoading(false)
       if (error) { setError('ERRO AUTH: ' + error.message); return }
       if (!data?.session) { setError('Login ok mas sem sessão — tente novamente'); return }
@@ -162,13 +165,13 @@ function ContaLoginInner() {
             <h2 style={{ margin: 0, fontFamily: 'var(--font-display-heavy)', fontSize: 32, textTransform: 'uppercase', letterSpacing: '-0.01em' }}>BEM-VINDO DE VOLTA.</h2>
             <p style={{ color: 'var(--fg2)', fontSize: 14, marginTop: 8 }}>Entra com o teu time.</p>
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 28 }}>
-              <div><label style={LABEL}>E-mail</label><input className="bg-input" style={INPUT} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" /></div>
+              <div><label style={LABEL}>E-mail</label><input name="email" className="bg-input" style={INPUT} type="email" autoComplete="email" placeholder="seu@email.com" /></div>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                   <label style={LABEL}>Senha</label>
                   <span style={{ fontSize: 11, color: 'var(--bg-accent-hot)', cursor: 'pointer' }}>Esqueci a senha</span>
                 </div>
-                <input className="bg-input" style={INPUT} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
+                <input name="password" className="bg-input" style={INPUT} type="password" autoComplete="current-password" placeholder="••••••••" />
               </div>
               {error && <div style={{ padding: '10px 14px', background: 'rgba(255,31,61,0.1)', border: '1px solid var(--bg-accent-hot)', fontSize: 13, color: '#ff6b6b' }}>{error}</div>}
               {success && <div style={{ padding: '10px 14px', background: 'rgba(31,157,85,0.1)', border: '1px solid #1f9d55', fontSize: 13, color: '#4cd680' }}>{success}</div>}
