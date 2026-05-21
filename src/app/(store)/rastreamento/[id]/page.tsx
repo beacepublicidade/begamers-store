@@ -52,21 +52,22 @@ type Tracking = {
 
 async function getTracking(id: string): Promise<Tracking | null> {
   const supabase = createAdminClient()
-  const { data } = await supabase
+
+  const { data: t } = await supabase
     .from('order_tracking')
-    .select(`
-      id, carrier, carrier_type, tracking_code, status,
-      estimated_delivery, courier_name, courier_rating, courier_vehicle,
-      delivery_address, events,
-      orders(
-        id, order_number, total, created_at,
-        shipping_method, shipping_carrier,
-        order_items(name, quantity, price)
-      )
-    `)
+    .select('id, carrier, carrier_type, tracking_code, status, estimated_delivery, courier_name, courier_rating, courier_vehicle, delivery_address, events, order_id')
     .eq('id', id)
-    .single()
-  return data as Tracking | null
+    .single() as unknown as { data: (Omit<Tracking, 'orders'> & { order_id: string }) | null }
+
+  if (!t) return null
+
+  const { data: order } = await supabase
+    .from('orders')
+    .select('id, order_number, total, created_at, shipping_method, shipping_carrier, order_items(name, quantity, price)')
+    .eq('id', t.order_id)
+    .single() as unknown as { data: Tracking['orders'] | null }
+
+  return { ...t, orders: order ?? null }
 }
 
 function fmt(v: number) {
