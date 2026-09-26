@@ -1,29 +1,11 @@
-# Editor & system
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
-
-# Vercel
-.vercel
-
-# Next.js build output
-.next/
-out/
-
-# Logs
-*.log
-npm-debug.log*
-
-# Deps
 node_modules/
-
-# Env files
+.next/
 .env.local
-.env.*.local
-
-# Local state files
-.design-canvas.state.json
-
-# Arquivos locais
-Geral/
+.env
+.env.production
+.env*.local
+dist/
+build/
+.DS_Store
+*.log
+.vercel/
